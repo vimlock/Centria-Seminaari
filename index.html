@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		
+		<link rel="stylesheet" type="text/css" href="style.css">
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+		<div id="filedrop">Drop files here</div>
+		
+		<!-- Script inclusion -->
+		<script src="engine/utility.js"></script>
+		<script src="engine/webgl.js"></script>
+		<script src="engine/core.js"></script>
+		<script src="engine/models.js"></script>
+		<script src="engine/scene.js"></script>
+		<script src="engine/filehandler.js"></script>
+		<script src="engine/events.js"></script>
+	</body>
+</html>
+
+
+
+
+
+<!-- Vertex shader -->
+<script id="vertex_shader" type="noscript">#version 300 es
+in vec4 a_position;
+in vec4 a_color;
+
+uniform mat4 model;
+uniform mat4 perspective;
+uniform mat4 view;
+
+out vec4 fragColor;
+
+void main() {
+	gl_Position = perspective * view * model * a_position;
+	fragColor = a_color;
+}
+</script>
+
+
+
+
+
+<!-- Fragment shader -->
+<script id="fragment_shader" type="noscript">#version 300 es
+precision mediump float;
+in vec4 fragColor;
+
+out vec4 outColor;
+
+void main() {
+	outColor = fragColor;
+}
+</script>
+
+
+
+<script>
+// Test run script
+function testRun() {
+	// Setting up model program and vao is done when model is loaded
+	// Model loading starts after gl has been initialized!!!
+	engine.models.cube.program = engine.gl.program.default;
+	engine.models.cube.vao = webgl.createModelVaoAndBuffers(engine.gl, engine.models.cube);
+	// Demo object. Objects refer to a model
+	// Transform is a property of a demo object, not a model's
+	obj = {};
+	obj.model = engine.models.cube;
+	
+	engine.gl.view = mat4.invert(mat4.translate(0, 0, -5));
+	
+	asd();
+}
+
+function asd() {
+	requestAnimationFrame(asd);
+	
+	obj.transform = mat4.multiply(mat4.rotateY(Date.now() * 0.001), mat4.rotateX(Date.now() * 0.003));
+	
+	webgl.drawObjectModel(engine.gl, obj);
+}
+
+</script>
