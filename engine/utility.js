@@ -267,18 +267,12 @@
 	}
 	
 	
+	
+	
+	
 	//  Holds all functions that return 3 cell arrays (3x1, 3d vectors)
 	this.vec3 = {
-
-        get zero() { return [ 0, 0, 0 ]; },
-        get one() {  return [ 1, 1, 1 ]; },
-        get left() {   return [ -1,  0,  0 ]; },
-        get right() {  return [  1,  0,  0 ]; },
-        get down() {   return [  0, -1,  0 ]; },
-        get up() {     return [  0,  1,  0 ]; },
-        get back() {   return [  0,  0, -1 ]; },
-        get foward() { return [  0,  0,  1 ]; },
-
+		
 		
 		add: function(a, b) {
 			return [ a[0] + b[0], a[1] + b[1], a[2] + b[2] ];
@@ -336,10 +330,106 @@
 		
 		rotateZ: function(angle) {
 			
+		},
+		
+		
+		get zero()    { return [  0,  0,  0 ]; },
+		get one()     { return [  1,  1,  1 ]; },
+		get left()    { return [ -1,  0,  0 ]; },
+		get right()   { return [  1,  0,  0 ]; },
+		get down()    { return [  0, -1,  0 ]; },
+		get up()      { return [  0,  1,  0 ]; },
+		get back()    { return [  0,  0, -1 ]; },
+		get forward() { return [  0,  0,  1 ]; }
+		
+		
+	}
+	
+	
+	
+	
+	
+	this.Color = class {
+	
+	
+		constructor(r, g, b, a) {
+			this.r = r;
+			this.g = g;
+			this.b = b;
+			this.a = a;
+		}
+		
+		
+		fromArray(a) {
+			return new Color(a[0], a[1], a[2], a[3]);
+		}
+		
+		
+		toArray() {
+			return [ this.r, this.g, this.b, this.a ];
+		}
+		
+		
+		toHex() {
+			return [ this.r * 255, this.g * 255, this.b * 255, this.a * 255 ];
+		}
+		
+		
+		toHexString() {
+			return this.toHex().map(decToHexPadded).join("");
+		}
+		
+		
+		get black() {
+			return new Color(0.0, 0.0, 0.0, 1.0);
+		}
+		
+		
+		get white() {
+			return new Color(1.0, 1.0, 1.0, 1.0);
+		}
+		
+		
+		get red() {
+			return new Color(1.0, 0.0, 0.0, 1.0);
+		}
+		
+		
+		get green() {
+			return new Color(0.0, 1.0, 0.0, 1.0);
+		}
+		
+		
+		get blue() {
+			return new Color(0.0, 0.0, 1.0, 1.0);
+		}
+		
+		
+		get yellow() {
+			return new Color(1.0, 1.0, 0.0, 1.0);
+		}
+		
+		
+		get cyan() {
+			return new Color(0.0, 1.0, 1.0, 1.0);
+		}
+		
+		
+		get magenta() {
+			return new Color(1.0, 0.0, 1.0, 1.0);
 		}
 		
 		
 	}
 	
 	
-})(this)
+	
+	
+	
+	this.decToHexPadded = function(dec) {
+		let tmp = dec.toString(16);
+		return tmp.length < 2 ? '0' + tmp : tmp;
+	}
+	
+	
+})(this);
