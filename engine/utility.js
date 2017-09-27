@@ -349,12 +349,6 @@
 	
 	
 	
-	function decToHexPadded(dec) {
-		let tmp = dec.toString(16);
-		return tmp.length < 2 ? '0' + tmp : tmp;
-	}
-	
-	
 	this.Color = class {
 	
 	
@@ -426,6 +420,15 @@
 		}
 		
 		
+	}
+	
+	
+	
+	
+	
+	this.decToHexPadded = function(dec) {
+		let tmp = dec.toString(16);
+		return tmp.length < 2 ? '0' + tmp : tmp;
 	}
 	
 	
