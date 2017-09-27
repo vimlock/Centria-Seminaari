@@ -17,6 +17,15 @@ engine.scene[0] = {};
 
 (function(context) {
 
+    /**
+     * Represents a single object in the scene.
+     *
+     * Nodes can have children, which move relative to their parent node
+     *
+     * Nodes can have different component attached to them, like in many
+     * other Entity-Component-Systems, except the "System" part is not really
+     * implemented here.
+     */
     context.SceneNode = class {
 
         constructor(name = "") {
@@ -121,7 +130,9 @@ engine.scene[0] = {};
         removeComponentAt(n) {
         }
 
-        // Recursively iterate every child and call fn on them
+        /**
+         * Recursively iterate every child and call fn on them
+         */
         walkAll(fn) {
             fn(this);
 
@@ -130,7 +141,9 @@ engine.scene[0] = {};
             }
         }
 
-        // Recursively iterate every child and call fn on them, but only if the node is enabled
+        /**
+         * Recursively iterate every child and call fn on them, but only if the node is enabled
+         */
         walkEnabled(fn) {
             if (!this.enabled)
                 return;
@@ -143,6 +156,13 @@ engine.scene[0] = {};
         }
     };
 
+    /**
+     * The root scene node.
+     *
+     * Root node does not differ much from any other scene node, except the
+     * transform is ignored in the root node for performance reasons and it
+     * contains some scene-wide variables.
+     */
     context.Scene = class extends context.SceneNode {
         constructor() {
             super();

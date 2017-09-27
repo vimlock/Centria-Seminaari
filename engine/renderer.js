@@ -2,34 +2,62 @@
 
 (function(context) {
 
+    const MAX_LIGHTS = 8;
+    const MAX_TEXTURES = 8;
+
+    /**
+     * Holds the geometries which are collected from the scene
+     * during rendering.
+     */
     function GeometryBatch(geometry, material) {
         this.geometry = geometry;
         this.material = material;
         this.transforms = [];
     }
 
+    /**
+     * Holds the collected lights which are collected from the
+     * scene during rendering.
+     */
     function LightBatch(transform, light) {
         this.transform = transform;
         this.light = light;
     }
 
+    /**
+     * High-level rendering system.
+     */
     context.Renderer = class {
 
         constructor(glContext) {
-            // The material we'll use if none is assigned to a model
+            /// The material we'll use if none is assigned to a model
             this.defaultMaterial = new Material();
 
-            // Accumulated rendering statistics
+            /// Accumulated rendering statistics
             this.performance = {};
+
             this.resetPerformance();
+
+            /// WebGL rendering context
             this.glContext = glContext;
         }
 
+        /**
+         * Draws a scene to the default viewport
+         *
+         * If camera is defined, it will be used instead of the scenes
+         * own camera.
+         *
+         * If shaderOverride is defined, it will used instead of the
+         * materials own shader.
+         */
         renderScene(scene, camera, shaderOverride) {
             // Prepare scene for rendering
             
             let lights = [];
             
+            // Opaque and transparent materials should be kept separate
+            // for correct alpha blending and depth sorting.
             let opaqueGeomBatches = [];
             let transparentGeomBatches = [];
 
@@ -76,11 +104,22 @@
             gl.clearColor( ...scene.background.toArray());
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            this.renderBatches(camera, lights, opaqueGeomBatches, shaderOverride);
-            this.renderBatches(camera, lights, opaqueGeomBatches, shaderOverride);
+            // TODO: Cull batches by bounding box or some other volume
+
+            // TODO: Sort opaque batches front-to-back
+            // TODO: Sort transparent batches back-to-front
+            
+            this._renderPass(camera, lights, opaqueGeomBatches, shaderOverride);
+            this._renderPass(camera, lights, transparentGeomBatches, shaderOverride);
         }
 
-        queueGeometry(batches, geometry, material, transform) {
+        /**
+         * Add a geometry to a batch.
+         *
+         * If a batch with the same material-geometry combination does not exist,
+         * it will be created.
+         */
+        _queueGeometry(batches, geometry, material, transform) {
 
             let batch = null;
 
@@ -105,13 +144,26 @@
             batch.transforms.push(transform);
         }
 
-        queueLight(batches, light, transform) {
+        /**
+         * Add light to a batch
+         */
+        _queueLight(batches, light, transform) {
             lights.push(new LightBatch(transform, light));
         }
 
-        renderBatches(camera, lights, batches, shaderOverride) {
+        /**
+         * Renders given geometries to the default viewport using the
+         * given lights and camera.
+         *
+         * If shaderOverride is defined, it will used instead of the
+         * materials own shader.
+         */
+        _renderPass(camera, lights, batches, shaderOverride) {
             // TODO: pick the closest and most brighest lights and upload them as uniforms
 
+            // TODO: Maybe add instancing support? Might be out of scope
+            // TODO: Sort the batches by material before rendering
+            
             for (let batch of batches) {
                 // TODO: bind material
                 // TODO: bind mesh
@@ -119,6 +171,21 @@
             }
         }
 
+        /**
+         * Setups a mesh for rendering
+         */
+        _bindMesh(mesh) {
+        }
+
+        /**
+         * Setups a material for rendering
+         */
+        _bindMaterial(material) {
+        }
+
+        /**
+         * Reset the performance counters
+         */
         resetPerformance() {
             this.performance.triangles = 0;
             this.performance.numDrawCalls = 0;
