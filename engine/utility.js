@@ -269,7 +269,16 @@
 	
 	//  Holds all functions that return 3 cell arrays (3x1, 3d vectors)
 	this.vec3 = {
-		
+
+        get zero() { return [ 0, 0, 0 ]; },
+        get one() {  return [ 1, 1, 1 ]; },
+        get left() {   return [ -1,  0,  0 ]; },
+        get right() {  return [  1,  0,  0 ]; },
+        get down() {   return [  0, -1,  0 ]; },
+        get up() {     return [  0,  1,  0 ]; },
+        get back() {   return [  0,  0, -1 ]; },
+        get foward() { return [  0,  0,  1 ]; },
+
 		
 		add: function(a, b) {
 			return [ a[0] + b[0], a[1] + b[1], a[2] + b[2] ];
