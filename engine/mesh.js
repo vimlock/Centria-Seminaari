@@ -2,7 +2,7 @@
 
 (function(context) {
 
-    contex.MeshAttributeNames = [
+    context.MeshAttributeNames = [
         "position", "color", "texCoord", "normal", "tangent"
     ];
 

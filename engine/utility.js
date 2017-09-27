@@ -376,46 +376,46 @@
 		
 		
 		toHexString() {
-			return this.toHex().map(decToHexPadded).join("");
+			return "#" +this.toHex().map(decToHexPadded).join("");
 		}
 		
 		
-		get black() {
+		static get black() {
 			return new Color(0.0, 0.0, 0.0, 1.0);
 		}
 		
 		
-		get white() {
+		static get white() {
 			return new Color(1.0, 1.0, 1.0, 1.0);
 		}
 		
 		
-		get red() {
+		static get red() {
 			return new Color(1.0, 0.0, 0.0, 1.0);
 		}
 		
 		
-		get green() {
+		static get green() {
 			return new Color(0.0, 1.0, 0.0, 1.0);
 		}
 		
 		
-		get blue() {
+		static get blue() {
 			return new Color(0.0, 0.0, 1.0, 1.0);
 		}
 		
 		
-		get yellow() {
+		static get yellow() {
 			return new Color(1.0, 1.0, 0.0, 1.0);
 		}
 		
 		
-		get cyan() {
+		static get cyan() {
 			return new Color(0.0, 1.0, 1.0, 1.0);
 		}
 		
 		
-		get magenta() {
+		static get magenta() {
 			return new Color(1.0, 0.0, 1.0, 1.0);
 		}
 		
