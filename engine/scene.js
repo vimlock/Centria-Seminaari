@@ -148,6 +148,7 @@ engine.scene[0] = {};
             super();
 
             this.background = new Color(0.15, 0.15, 0.15, 1.0);
+            this.ambient = new Color(0.01, 0.01, 0.01, 1.0);
         }
     };
 
