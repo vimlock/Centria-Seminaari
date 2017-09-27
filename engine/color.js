@@ -1,5 +1,6 @@
+"use strict";
 
-(function() {
+(function(context) {
 
     function decToHexPadded(dec)
     {
@@ -7,7 +8,7 @@
         return tmp.length < 2 ? '0' + tmp : tmp;
     }
 
-    this.Color = class
+    context.Color = class Color
     {
         constructor(r, g, b, a)
         {
@@ -65,4 +66,4 @@
             return new Color(1.0, 0.0, 1.0, 1.0);
         }
     }
-})();
+})(this);
