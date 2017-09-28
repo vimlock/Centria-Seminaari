@@ -10,7 +10,7 @@
     }
 
     context.buildShaderKey = function(name, defines) {
-        return name + ";" + Array.from(defines).join(";").
+        return name + ";" + Array.from(defines).join(";");
     }
 
     /**
