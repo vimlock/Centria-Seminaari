@@ -5,6 +5,9 @@
     const MAX_LIGHTS = 8;
     const MAX_TEXTURES = 8;
 
+    const SHADER_VERSION = "#version 300 es";
+    const SHADER_PREAMBLE = "";
+
     /**
      * Holds the geometries which are collected from the scene
      * during rendering.
@@ -40,6 +43,12 @@
 
             /// WebGL rendering context
             this.glContext = glContext;
+
+            this.shaderCache = new Map();
+
+            this.activeMaterial = null;
+            this.activeMesh = null;
+            this.activeShader = null;
         }
 
         /**
@@ -72,6 +81,8 @@
                 // Pick the models
                 let model = node.getComponent(Model);
                 if (model && model.mesh) {
+
+                    this.performance.numModels++;
 
                     model.mesh.geometries.forEach(function (geometry, index) {
                         let material = model.getMaterial(index) || this.defaultMaterial;
@@ -108,6 +119,8 @@
 
             // TODO: Sort opaque batches front-to-back
             // TODO: Sort transparent batches back-to-front
+            
+            this.performance.numLights += lights.length;
             
             this._renderPass(camera, lights, opaqueGeomBatches, shaderOverride);
             this._renderPass(camera, lights, transparentGeomBatches, shaderOverride);
@@ -165,33 +178,198 @@
             // TODO: Sort the batches by material before rendering
             
             for (let batch of batches) {
-                // TODO: bind material
-                // TODO: bind mesh
-                // TODO: render the object
+                
+                let geo = batch.geometry;
+                let mat = batch.material;
+
+                this._bindMesh(geo.mesh);
+                this._bindMaterial(mat);
+
+                if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
+                    continue;
+
+                for (let t of batch.transforms) {
+                    this.performance.numDrawCalls++;
+                    this.performance.vertices += geom.indexCount;
+
+                    // TODO: render the object
+                }
             }
+        }
+
+        _bindTransform(transform) {
         }
 
         /**
          * Setups a mesh for rendering
          */
         _bindMesh(mesh) {
+            if (mesh === this.activeMesh) {
+                return;
+            }
+
+            this.performance.numMeshChanges++;
+            this.activeMesh = mesh;
         }
 
         /**
          * Setups a material for rendering
          */
         _bindMaterial(material) {
+            if (material === this.activeMaterial) {
+                return;
+            }
+
+            this.performance.numMaterialChanges++;
+            this.activeMaterial = material;
+
+            this._bindShader(_getShaderProgram(material.shader, material.defines));
+        }
+
+        _bindShader(shaderProgram) {
+            if (shaderProgram === this.activeShader) {
+                return;
+            }
+
+            this.performance.numShaderChanges++;
+            this.activeShader = shaderProgram;
+
+            let gl = this.glContext;
+
+            gl.useProgram(shader.program);
         }
 
         /**
-         * Reset the performance counters
+         * Reset the performance counters, should be called at the start of the frame
          */
         resetPerformance() {
-            this.performance.triangles = 0;
+            this.performance.vertices = 0;
             this.performance.numDrawCalls = 0;
-            this.performance.materials = 0;
             this.performance.numModels = 0;
             this.performance.numLights = 0;
+
+            this.performance.numMeshChanges = 0;
+            this.performance.numMaterialChanges = 0;
+            this.performance.numShaderChanges = 0;
+        }
+
+        _getShaderProgram(shader, defines) {
+
+            // Try to get cached shader first
+            let key = buildShaderKey(name, defines);
+
+            if (key in this.shaderCache) {
+                return this.shaderCache[key];
+            }
+
+            let program = this._buildShaderProgram(name, defines);
+            this.shaderCache[key] = program;
+
+            return program;
+        }
+
+        /**
+         * 
+         */
+        _getCachedShaderProgram(shaderKey) {
+            return this.shaderCache[shaderKey];
+        }
+
+        /**
+         * Compiles a shader with given defines
+         */
+        _createShaderProgram(shader, defines) {
+            let gl = this.glContext;
+
+            let vertexShader = this._createShader(shader.name, shader.source, gl.VERTEX_SHADER);
+            if (!vertexShader)
+                return null;
+
+            let fragmentShader = this._createShader(shader.name, shader.source, gl.FRAGMENT_SHADER);
+            if (!fragmentShader)
+                return null;
+
+            let program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            
+            let success = gl.getProgramParameter(program, gl.LINK_STATUS);
+            if (!success) {
+                console.log("Failed to compile program " + buildShaderKey(shader.name, shader.defines) +
+                    " :" + gl.getProgramInfoLog(program));
+                return null;
+            }
+
+            let prog = new ShaderProgram();
+
+            prog.source = shader;
+            prog.program = program;
+            prog.defines = defines;
+
+            prog.updateKey();
+
+            return prog;
+        }
+
+        _buildShaderDefines(defines) {
+            return Array.from(defines.keys()).sort().map(function(key) {
+                let val = defines[key];
+                if (val) {
+                    return "#define " + key + " " + val + "\n";
+                }
+                else {
+                    return "#define " + key + "\n";
+                }
+            }).join("");
+        }
+
+        _createShader(name, source, type, defines) {
+            let gl = this.glContext;
+
+            let typeDefine = null;
+            let typeName = null;
+
+            if (type === gl.VERTEX_SHADER) {
+                typeDefine = "COMPILE_VERTEX";
+                typeName = "vertex";
+            }
+            else if (type === gl.FRAGMENT_SHADER) {
+                typeDefine = "COMPILE_FRAGMENT";
+                typeName = "fragment";
+            }
+            else {
+                console.log("Bad shader type: " + type);
+                return null;
+            }
+
+            let modifiedSource = SHADER_VERSION + "\n" +
+                SHADER_PREAMBLE + "\n" +
+                "#define " + typeDefine + "\n" +
+                this._buildShaderDefines(defines) + "\n" +
+                "#line 1\n" +
+                source;
+
+            let shader = gl.createShader(type);
+            gl.shaderSource(shader, modifiedSource);
+            gl.compileShader(shader);
+
+            let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+            if (!success) {
+                console.log("Failed to compile " + typeName + " shader " +
+                    buildShaderKey(name, defines) + " : " + gl.getShaderInfoLog(shader));
+
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+
+        /**
+         * Remove unused shaders
+         */
+        _clearShaderCache(lastUsed) {
         }
     }
 

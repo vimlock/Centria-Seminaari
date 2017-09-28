@@ -42,5 +42,7 @@
         /// vec3 [number, number, number]
         /// vec4 [number, number, number, number]
         this.shaderUniforms = new Map();
+
+        this.defines = new Map();
     }
 })(this);
