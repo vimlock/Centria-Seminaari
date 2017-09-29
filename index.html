@@ -343,6 +343,10 @@ function sceneTest() {
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
 
+    let lightNode = scene.createChild("Light");
+    lightNode.worldTransform = mat4.translate(0, 1, -2.5);
+    let light = lightNode.createComponent(Light);
+
     let prevFrameTime = Date.now();
 
     requestAnimationFrame(function update() {

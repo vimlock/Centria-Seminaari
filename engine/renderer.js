@@ -35,6 +35,7 @@
     function LightBatch(transform, light) {
         this.transform = transform;
         this.light = light;
+        this.priority = -1.0;
     }
 
     /**
@@ -87,7 +88,7 @@
                 // Pick the lights
                 let light = node.getComponent(Light);
                 if (light) {
-                    renderer._queueLight(lights, light, node.transform);
+                    renderer._queueLight(lights, light, node.worldTransform);
                 }
 
                 // Pick the models
@@ -122,6 +123,14 @@
                 console.log("No camera found to render scene with");
                 return;
             }
+
+            // Calculate light priorities for culling
+            let camPosition = camera.node.worldPosition;
+            for (let l of lights) {
+                l.priority = vec3.distanceSquared(mat4.getTranslation(l.transform), camPosition) * l.intensity;
+            }
+
+            this._cullLights(camera, lights, 8);
 
             let gl = this.glContext;
             gl.clearColor( ...scene.background.toArray());
@@ -177,6 +186,31 @@
         }
 
         /**
+         * Limits the number of batches to maxBatches.
+         *
+         * @param camera {Camera} The camera to for culling.
+         * @param lightBatches {Array.<Light>} The Lights which are to be culled.
+         * @param maxLights Light limit.
+         */
+        _cullLights(camera, lights, maxLights) {
+
+            // Some sanity checking, shaders wont supports any more than this
+            if (maxLights > MAX_LIGHTS)
+                maxLights = MAX_LIGHTS;
+
+            // Do we have to do anything?
+            if (lights.length < maxLights) {
+                return;
+            }
+
+            lights.sort(function(a, b) {
+                return a.priority - b.priority;
+            });
+
+            lights.length = maxLights;
+        }
+
+        /**
          * Renders given geometries to the default viewport using the
          * given lights and camera.
          *
@@ -219,6 +253,7 @@
                 this._bindMaterial(mat);
                 this._bindMesh(mesh);
                 this._bindCamera(camera);
+                this._bindLights(lights);
 
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
                     continue;
@@ -232,6 +267,9 @@
                     gl.drawElements(drawType, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
             }
+        }
+
+        _bindLights(lights) {
         }
 
         /**
