@@ -226,10 +226,11 @@
             let gl = this.glContext;
 
             gl.enable(gl.DEPTH_TEST);
-            gl.enable(gl.CULL_FACE);
+            gl.disable(gl.CULL_FACE);
             gl.enable(gl.DITHER);
 
-            gl.frontFace(gl.CW);
+            gl.depthMask(true);
+            gl.frontFace(gl.CCW);
 
             this.performance.batches += batches.length;
             
