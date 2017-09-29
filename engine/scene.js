@@ -135,6 +135,31 @@
             return null;
         }
 
+        /**
+         * Same as getComponent, but instead of only returning the first found
+         * component, it returns every component of the given type.
+         *
+         * @param type Type to search for
+         *
+         * @returns Array of components of the given type. If none is found, empty array is returned.
+         */
+        getComponents(type) {
+            let tmp = [];
+
+            for (let c of this.components) {
+                if (c instanceof type) {
+                    tmp.push(c);
+                }
+            }
+
+            return tmp;
+        }
+
+        /**
+         * Removes first component of the given type
+         *
+         * If no component exists with the given type, no action is performed.
+         */
         removeComponent(type) {
         }
 
