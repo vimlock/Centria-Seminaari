@@ -10,6 +10,9 @@
 	<body>
 		<canvas id="canvas"></canvas>
 		<div id="filedrop">Drop files here</div>
+
+        <div id="render-statistics">
+        </div>
 		
 		<!-- Script inclusion -->
 		<script src="engine/core.js"></script>
@@ -296,8 +299,22 @@ function buildTestMesh(positions, colors, indices) {
     return Mesh.fromData(vBuff, iBuff, attrs);
 }
 
+function displayStatics(performance) {
+    let div = document.getElementById("render-statistics");
+
+    let html = 
+        "<p>FPS: " + parseInt(performance.fps) + "</p>" +
+        "<p>Vertices: " + performance.vertices + "</p>" +
+        "<p>Draw Calls: " + performance.numDrawCalls + "</p>" +
+        "<p>Lights: " + performance.numLights + "</p>" +
+        "<p>Batches: " + performance.batches + "</p>";
+
+    div.innerHTML = html;
+}
+
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
+    engine.renderer.performance.fps = 0.0;
 
     let mesh = buildTestMesh(
         engine.models.cube.vertices,
@@ -326,7 +343,14 @@ function sceneTest() {
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
 
+    let prevFrameTime = Date.now();
+
     requestAnimationFrame(function update() {
+        let currentFrameTime = Date.now();
+        let timeDelta = currentFrameTime - prevFrameTime;
+
+        let fps = 1.0 / Math.max(timeDelta * 0.001, 0.001);
+
         requestAnimationFrame(update);
 
         cubeNode.worldTransform = mat4.multiply(
@@ -340,6 +364,11 @@ function sceneTest() {
         engine.renderer.resetPerformance();
         engine.renderer.renderScene(scene, camera);
 
+        engine.renderer.performance.fps = engine.renderer.performance.fps * 0.99 + fps * 0.01;
+        //engine.renderer.performance.fps = fps;
+        displayStatics(engine.renderer.performance);
+
+        prevFrameTime = currentFrameTime;
     });
 }
 
