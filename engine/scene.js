@@ -10,6 +10,10 @@
      * Nodes can have different component attached to them, like in many
      * other Entity-Component-Systems, except the "System" part is not really
      * implemented here.
+     *
+     * You should not create new nodes with `new SceneNode()`.
+     * Instead you should use createChild() function.
+     * This way the scene hierarchy stays intact.
      */
     context.SceneNode = class SceneNode {
 
@@ -21,9 +25,14 @@
             this.localRotation = Quaternion.identity;
             this.localScale = vec3.one;
 
+            // Use 0 as default value because 1 is the first valid node id.
+            // So if things get messed up, it will wreak the least havoc.
+            this.id = 0;
+
             this.name = name;
             this.parent = null;
             this.children = [];
+            this.scene = null;
             this.components = [];
             this.enabled = true;
             this.shouldRemove = false;
@@ -75,6 +84,10 @@
 
         createChild(name) {
             let child = new SceneNode(name);
+            child.scene = this.scene;
+
+            this.scene._registerNode(child);
+
             child.setParent(this);
 
             return child;
@@ -88,6 +101,9 @@
 
         setParent(parent, keepTransform=true) {
             this.parent = parent;
+
+            // TODO: Check if the scene is different, and either reject the change
+            // or register the node to new scene
 
             if (!keepTransform)
                 this.worldTransformDirty = true;
@@ -115,6 +131,7 @@
             tmp.node = this;
 
             this.components.push(tmp);
+            this.scene._registerComponent(tmp);
             
             return tmp;
         }
@@ -207,8 +224,92 @@
         constructor() {
             super();
 
+            this.scene = this;
+
             this.background = new Color(0.15, 0.15, 0.15, 1.0);
             this.ambient = new Color(0.01, 0.01, 0.01, 1.0);
+
+            /// Mapping for quick node access by id.
+            this.nodes = new Map();
+            
+            /// Mapping for quick component access by id.
+            this.components = new Map();
+
+            /// Used to generate unique node ids.
+            this.nextComponentId = 1;
+
+            /// Used to generate unique component ids.
+            this.nextNodeId = 1;
+        }
+
+        /**
+         * Returns a node with the given id.
+         * Nodes are indexed by id so this is relatively fast function.
+         *
+         * @returns Node if found, null if the node was not found.
+         */
+        getNodeById(id) {
+            return this.nodes.get(id);
+        }
+
+        /**
+         * Warning, this function is slow!
+         * It will linearly search every node for a node with the given name.
+         *
+         * @returns Node if found, null if the node was not found.
+         */
+        getNodeByName(name) {
+            for (let [, node] of this.nodes) {
+                if (node.name == name) {
+                    return node;
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Returns a component with the given id.
+         * Components are indexed by id so this is relatively fast function.
+         *
+         * @returns Component if found, null if the component was not found.
+         */
+        getComponentById(id) {
+            return this.components.get(id);
+        }
+
+        /**
+         * Called when a node is added to the scene.
+         */
+        _registerNode(node) {
+            let id = this.nextNodeId++;
+
+            node.id = id;
+            this.nodes.set(id, node);
+        }
+
+        /**
+         * Called when a node is removed from scene.
+         */
+        _unregisterNode(node) {
+            this.nodes.delete(node.id);
+        }
+
+        /**
+         * Called when a component is added to the scene.
+         */
+        _registerComponent(comp) {
+            let id = this.nextComponentId++;
+
+            comp.id = id;
+            this.components.set(id, comp);
+        }
+
+        /**
+         * Called when a component is removed from the scene.
+         */
+        _unregisterComponent(comp) {
+            this.components.delete(comp.id);
         }
     };
 
