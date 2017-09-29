@@ -365,9 +365,43 @@ function displayStatics(performance) {
     div.innerHTML = html;
 }
 
+function random(scale) {
+    return ((Math.random() * 2.0) - 1.0) * scale;
+}
+
+function spawnCubes(scene, mesh, material, num)
+{
+    for (let i = 0; i < num; ++i) {
+        let cubeNode = scene.createChild("Cube");
+
+        let scale = 0.25 + random(0.75);
+
+        cubeNode.worldTransform = mat4.multiply(
+            mat4.translate(random(30.0), random(30.0), random(30.0)),
+            mat4.scale(scale, scale, scale) 
+        );
+
+        cubeNode.worldTransform = mat4.multiply(
+                cubeNode.worldTransform,
+                mat4.rotateX(random(360.0))
+        );
+
+        cubeNode.worldTransform = mat4.multiply(
+                cubeNode.worldTransform,
+                mat4.rotateY(random(360.0))
+        );
+
+        let cube = cubeNode.createComponent(Model);
+        cube.mesh = mesh;
+        cube.material = material;
+    }
+}
+
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
     engine.renderer.performance.fps = 0.0;
+
+    let scene = new Scene();
 
     let mesh = buildTestMesh(
         engine.models.cube.vertices,
@@ -376,23 +410,25 @@ function sceneTest() {
         engine.models.cube.indices
     );
 
-    let shader = new ShaderSource("TestShader",
+    let material = new Material();
+
+    material.shader = new ShaderSource("TestShader",
         document.getElementById("test-shader").innerHTML);
 
-    let scene = new Scene();
+    material.defines = new Map([
+        ["VERTEX_COLORS", null],
+        ["NORMALS", null],
+        ["LIGHTS", null],
+    ]);
+
+    spawnCubes(scene, mesh, material, 999);
 
     let cubeNode = scene.createChild("Cube");
     cubeNode.worldTransform = mat4.identity();
 
     let cube = cubeNode.createComponent(Model);
     cube.mesh = mesh;
-    cube.material = new Material();
-    cube.material.shader = shader;
-    cube.material.defines = new Map([
-        ["VERTEX_COLORS", null],
-        ["NORMALS", null],
-        ["LIGHTS", null],
-    ]);
+    cube.material = material;
 
     let camNode = scene.createChild("Camera");
 	camNode.worldTransform = mat4.translate(0, 0, -5.0);
