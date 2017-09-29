@@ -130,7 +130,7 @@
                 l.priority = vec3.distanceSquared(mat4.getTranslation(l.transform), camPosition) * l.intensity;
             }
 
-            this._cullLights(camera, lights, 8);
+            this._cullLights(camera, lights, 4);
 
             let gl = this.glContext;
             gl.clearColor( ...scene.background.toArray());
@@ -270,6 +270,24 @@
         }
 
         _bindLights(lights) {
+
+            let gl = this.glContext;
+            let uniforms = this.activeShader.lightUniformLocations;
+
+            for (let i = 0; i < 4; ++i) {
+                if (i < lights.length) {
+                    let light = lights[i].light;
+
+                    gl.uniform3fv(uniforms[i].position, light.node.worldPosition);
+                    gl.uniform4fv(uniforms[i].color, light.color.toArray());
+                    gl.uniform1f(uniforms[i].range, light.range);
+                }
+                else {
+                    gl.uniform3fv(uniforms[i].position, vec3.zero);
+                    gl.uniform4fv(uniforms[i].color, Color.black.toArray());
+                    gl.uniform1f(uniforms[i].range, 0.0);
+                }
+            }
         }
 
         /**
@@ -285,7 +303,10 @@
             this.cameraProjectionMatrix = cam.projectionMatrix;
 
             gl.uniformMatrix4fv(uniforms.projectionMatrix, false, this.cameraProjectionMatrix);
-            gl.uniformMatrix4fv(uniforms.normalMatrix, false, mat4.transpose(mat4.invert(this.cameraViewMatrix)));
+
+            gl.uniform4fv(uniforms.ambientColor, cam.node.scene.ambientColor.toArray());
+            gl.uniform3fv(uniforms.viewForward, cam.node.forward);
+            gl.uniform3fv(uniforms.viewPosition, cam.node.worldPosition);
         }
 
         /**
@@ -301,6 +322,8 @@
             // console.log(m);
 
             gl.uniformMatrix4fv(uniforms.modelViewMatrix, false, m);
+            gl.uniformMatrix4fv(uniforms.modelMatrix, false, transform);
+            gl.uniformMatrix4fv(uniforms.normalMatrix, false, mat4.transpose(mat4.invert(m)));
         }
 
         /**
@@ -350,6 +373,7 @@
             let gl = this.glContext;
 
             gl.uniform4fv(uniforms.diffuseColor, material.diffuseColor.toArray());
+            gl.uniform4fv(uniforms.specularColor, material.specularColor.toArray());
         }
 
         _bindShader(shaderProgram) {
@@ -444,20 +468,44 @@
             prog.uniformLocations = {
                 modelViewMatrix: gl.getUniformLocation(program, "uModelViewMatrix"),
                 projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
+                modelMatrix: gl.getUniformLocation(program, "uModelMatrix"),
                 normalMatrix: gl.getUniformLocation(program, "uNormalMatrix"),
                 diffuseColor: gl.getUniformLocation(program, "uDiffuseColor"),
+                specularColor: gl.getUniformLocation(program, "uSpecularColor"),
+                ambientColor: gl.getUniformLocation(program, "uAmbientColor"),
+                viewForward: gl.getUniformLocation(program, "uViewForward"),
+                viewPosition: gl.getUniformLocation(program, "uViewPosition"),
             };
+
+            // Lights are a bit of a special case.
+            prog.lightUniformLocations = [];
+            for (let i = 0; i < 4; ++i) {
+                prog.lightUniformLocations.push({
+                    position: gl.getUniformLocation(program, "uLights[" + i + "].position"),
+                    color:    gl.getUniformLocation(program, "uLights[" + i + "].color"),
+                    range:    gl.getUniformLocation(program, "uLights[" + i + "].range"),
+                });
+            }
 
             prog.attribLocations = {
                 position: gl.getAttribLocation(program, "iPosition"),
                 color: gl.getAttribLocation(program, "iColor"),
+                normal: gl.getAttribLocation(program, "iNormal"),
             };
 
             prog.updateKey();
 
+            /*
             Object.keys(prog.uniformLocations).forEach(function(key) {
                 console.log("uniform " + key + " at " + prog.uniformLocations[key]);
             });
+
+            prog.lightUniformLocations.forEach(function(value, index) {
+                Object.keys(prog.uniformLocations).forEach(function(key) {
+                    console.log("light " + index + " uniform " + key + " at " + prog.uniformLocations[key]);
+                });
+            });
+            */
 
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);
