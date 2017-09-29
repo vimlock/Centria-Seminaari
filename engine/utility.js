@@ -263,9 +263,12 @@
 				sin0, cos0,  0, 0,
 				0,    0,     1, 0,
 				0,    0,     0, 1 ];
-		}
+		},
 		
-	}
+        getTranslation: function(m) {
+            return [m[12], m[13], [14]];
+        },
+    };
 	
 	
 	
@@ -317,7 +320,22 @@
 		scale: function(a) {
 			
 		},
-		
+
+        length: function(a) {
+            return Math.sqrt(a[0] * a[0]  + a[1] * a[1] + a[2] * a[2]);
+        },
+
+        lengthSquared: function(a) {
+            return a[0] * a[0]  + a[1] * a[1] + a[2] * a[2];
+        },
+
+        distance: function(a, b) {
+            return this.length(this.substract(a, b));
+        },
+
+        distanceSquared: function(a, b) {
+            return this.lengthSquared(this.substract(a, b));
+        },
 		
 		rotateX: function(angle) {
 			

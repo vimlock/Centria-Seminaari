@@ -67,6 +67,10 @@
         get localTransform() {
         }
 
+        get worldPosition() {
+            return mat4.getTranslation(this.worldTransform);
+        }
+
         get forward() {
             let m = this.worldTransform;
             return [m[3], m[7], m[11]];
