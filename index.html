@@ -397,9 +397,100 @@ function spawnCubes(scene, mesh, material, num)
     }
 }
 
+
+function initInput() {
+
+    let inputKeys = ["w", "a", "s", "d", "e", "q"];
+
+    let input = {
+    };
+
+    inputKeys.forEach(function(value) {
+        input[value] = false;
+    });
+
+    input["MouseX"] = undefined;
+    input["MouseY"] = undefined;
+
+    input["MouseDeltaX"] = 0.0;
+    input["MouseDeltaY"] = 0.0;
+
+    window.addEventListener("keydown", function(ev) {
+        if (ev.key in input) {
+            input[ev.key] = true;
+        }
+
+    }, false);
+
+    window.addEventListener("keyup", function(ev) {
+        if (ev.key in input) {
+            input[ev.key] = false;
+        }
+
+    }, false);
+
+    window.addEventListener("mousemove", function(ev) {
+        if (input["MouseX"] === undefined) {
+            input["MouseX"] = ev.screenX;
+            input["MouseX"] = ev.screenY;
+        }
+        else {
+            input["MouseDeltaX"] = ev.screenX - input["MouseX"];
+            input["MouseDeltaY"] = ev.screenY - input["MouseY"];
+
+            input["MouseX"] = ev.screenX;
+            input["MouseY"] = ev.screenY;
+        }
+
+    }, false);
+
+    return input;
+}
+
+function updateCamera(camNode, timeDelta) {
+
+    let dz = 0.0;
+    let dx = 0.0;
+    let dy = 0.0;
+
+    if (engine.input["w"]) { dz += 1.0; }
+    if (engine.input["s"]) { dz -= 1.0; }
+
+    if (engine.input["d"]) { dx -= 1.0; }
+    if (engine.input["a"]) { dx += 1.0; }
+
+    if (engine.input["e"]) { dy -= 1.0; }
+    if (engine.input["q"]) { dy += 1.0; }
+
+    const speed = 0.01;
+
+    dz *= timeDelta * speed;
+    dx *= timeDelta * speed;
+    dy *= timeDelta * speed;
+
+    let d = vec3.add(
+        vec3.scale(camNode.forward, dz),
+        vec3.scale(camNode.left, dx)
+    );
+
+    d = vec3.add(d, vec3.scale(camNode.up, dy));
+
+    let position = vec3.add(camNode.worldPosition, d);
+
+    camNode.worldTransform[12] = 0.0;
+    camNode.worldTransform[13] = 0.0;
+    camNode.worldTransform[14] = 0.0;
+
+    camNode.worldTransform = mat4.multiply(
+        camNode.worldTransform, mat4.translate(position[0], position[1], position[2])
+    );
+
+}
+
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
     engine.renderer.performance.fps = 0.0;
+    engine.input = initInput();
 
     let scene = new Scene();
 
@@ -463,6 +554,8 @@ function sceneTest() {
 
         // scene.updateHierarchy(false);
         scene.update();
+
+        updateCamera(camNode, timeDelta);
 
         engine.renderer.resetPerformance();
         engine.renderer.renderScene(scene, camera);

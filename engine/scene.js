@@ -73,7 +73,7 @@
 
         get forward() {
             let m = this.worldTransform;
-            return [m[3], m[7], m[11]];
+            return [m[2], m[6], m[10]];
         }
 
         get left() {
@@ -83,7 +83,7 @@
 
         get up() {
             let m = this.worldTransform;
-            return [m[0], m[5], m[10]];
+            return [m[1], m[5], m[9]];
         }
 
         createChild(name) {

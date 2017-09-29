@@ -266,7 +266,7 @@
 		},
 		
         getTranslation: function(m) {
-            return [m[12], m[13], [14]];
+            return [m[12], m[13], m[14]];
         },
     };
 	
@@ -317,8 +317,8 @@
 		},
 		
 		
-		scale: function(a) {
-			
+		scale: function(a, b) {
+            return [a[0] * b, a[1] * b, a[2] * b];
 		},
 
         length: function(a) {
