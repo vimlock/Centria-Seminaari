@@ -10,7 +10,18 @@
     };
 
     context.buildShaderKey = function(name, defines) {
-        return name + ";" + Array.from(defines).join(";");
+        let defineStrs = [];
+
+        defines.forEach(function(val, key) {
+            if (val === null) {
+                defineStrs.push(key);
+            }
+            else {
+                defineStrs.push(key + "=" + val);
+            }
+        });
+
+        return name + "(" + defineStrs.join(";") + ")";
     };
 
     /**
