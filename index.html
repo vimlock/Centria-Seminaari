@@ -319,7 +319,7 @@ function sceneTest() {
     cube.material = new Material();
     cube.material.shader = shader;
     cube.material.defines = new Map([["VERTEX_COLORS", null]]);
-    cube.material.diffuseColor = Color.gray;
+    // cube.material.diffuseColor = Color.gray;
 
     let camNode = scene.createChild("Camera");
 	camNode.worldTransform = mat4.translate(0, 0, -5.0);

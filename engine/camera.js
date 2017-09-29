@@ -26,6 +26,9 @@ const RadToDeg = 1.0 / DegToRad;
             this.farPlane = 1000.0;
         }
 
+        /**
+         * @returns mat4 Representing the projection of this camera
+         */
         get projectionMatrix() {
             if (this.orthographic) {
                 return mat4.identity(); // TODO
@@ -36,6 +39,24 @@ const RadToDeg = 1.0 / DegToRad;
                     this.nearPlane, this.farPlane
                 );
             }
+        }
+
+        /**
+         * Shorthand to get view matrix from this camera.
+         *
+         * @returns mat4 Representing the view matrix of this camera
+         */
+        get viewMatrix() {
+            return this.node.worldTransform;
+        }
+
+        /**
+         * Shorthand to get view vector from this camera.
+         *
+         * @returns vec3 Representing the view vector of this camera
+         */
+        get viewDirection() {
+            return this.node.worldTransform.forward;
         }
     };
 

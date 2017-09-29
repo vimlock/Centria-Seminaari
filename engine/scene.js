@@ -1,20 +1,5 @@
 "use strict";
 
-engine.scene = [];
-engine.scene.current = {};
-
-engine.scene.change = function(nextScene) {
-	var sceneDifferences = this.getLoadable(this.current, this[nextScene]);
-	this.loadScene(sceneDifferences);
-}
-
-engine.scene.loadscene = function(differences) {
-	
-}
-
-engine.scene[0] = {};
-
-
 (function(context) {
 
     /**
@@ -44,7 +29,14 @@ engine.scene[0] = {};
             this.shouldRemove = false;
         }
 
-        updateHierarchy(force) {
+        /**
+         * Recursively update worldTransform of every subnode.
+         *
+         * @param force By default, this function updates world transform only if
+         *     worldTransformDirty flag is set, this behaviour can be overriden
+         *     with this flag
+         */
+        updateHierarchy(force=false) {
             let dirty = force || this.worldTransformDirty;
 
             if (dirty && parent) {
@@ -67,12 +59,18 @@ engine.scene[0] = {};
         }
 
         get forward() {
+            let m = this.worldTransform;
+            return [m[3], m[7], m[11]];
         }
 
         get left() {
+            let m = this.worldTransform;
+            return [m[0], m[1], m[3]];
         }
 
         get up() {
+            let m = this.worldTransform;
+            return [m[0], m[5], m[10]];
         }
 
         createChild(name) {
@@ -107,6 +105,11 @@ engine.scene[0] = {};
         deserializeJSON(src) {
         }
 
+        /**
+         * Creates a new component of the given type.
+         *
+         * @returns The newly created component
+         */
         createComponent(type) {
             let tmp = new type();
             tmp.node = this;
@@ -116,6 +119,12 @@ engine.scene[0] = {};
             return tmp;
         }
 
+        /**
+         * Returns first component of the given type.
+         * This function takes into account inheritance hierarchy.
+         * 
+         * @returns the component or null if not found.
+         */
         getComponent(type) {
             for (let c of this.components) {
                 if (c instanceof type) {
@@ -144,7 +153,9 @@ engine.scene[0] = {};
         }
 
         /**
-         * Recursively iterate every child and call fn on them, but only if the node is enabled
+         * Recursively iterate every child and call fn on them, but only if the node is enabled.
+         *
+         * @fn The callbackback to use, should accept a single parameter.
          */
         walkEnabled(fn) {
             if (!this.enabled)
@@ -160,6 +171,8 @@ engine.scene[0] = {};
 
     /**
      * The root scene node.
+     *
+     * @extends SceneNode
      *
      * Root node does not differ much from any other scene node, except the
      * transform is ignored in the root node for performance reasons and it

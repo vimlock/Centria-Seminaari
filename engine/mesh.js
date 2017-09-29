@@ -47,14 +47,28 @@
             this.geometries = [];
         }
 
+        /**
+         * Construct a new Mesh from given data.
+         *
+         * @param vertices {Array|Float32Array} Interleaved vertex data.
+         * @param indices {Array|Uint16Array} Indices, must be 16-bit.
+         * @param attributes {Array.<MeshAttribute>} Vertex data attributes.
+         * @param geometries {Array.<Geometry>|undefined} Geometries of the mesh, if omitted
+         *                   single geometry is created which uses all of the indices.
+         *
+         *  @returns {Mesh}
+         */
         static fromData(vertices, indices, attributes, geometries) {
 
-            // Check that the mesh attributes are sensible
+            // Check that the mesh attributes are sensible.
+            // TODO: check that the component count is sensible
+            // TODO: check that components dont overlap eachother
             if (!Mesh.getMeshAttrByName(attributes, "position")) {
                 console.log("no positon defined in the mesh attributes");
                 return null;
             }
 
+            //Construct a single geometry if the caller omitted the geometries.
             if (!geometries || geometries.length == 0) {
                 geometries = [
                     new Geometry(0, indices.length, null)
@@ -68,7 +82,7 @@
             gl.bindBuffer(gl.ARRAY_BUFFER, vb);
             gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-            // uload the indices to the gpu
+            // Upload the indices to the gpu
             let ib = gl.createBuffer();
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
@@ -92,8 +106,12 @@
 
         /**
          * Utility function to get a MeshAttribute by name
-         *
          * Returns null if Mesh does not have that attribute.
+         *
+         * @param attrs {Array.<MeshAttribute>} Attributes to seek from.
+         * @param name {string} name to search for.
+         *
+         * @returns {MeshAttribute|null}
          */
         static getMeshAttrByName(attrs, name) {
             for (let attr of attrs) {
@@ -105,6 +123,12 @@
             return null;
         }
 
+        /**
+         * Utility function calculate the size of a single vertex from a mesh attribute list.
+         *
+         * @param attrs {Array.<MeshAttribute> The Mesh attributes to search from.
+         *
+         */
         static calculateVertexSize(attrs) {
             return attrs.reduce(function(acc, attr) {
                 return acc + attr.size * 4;
