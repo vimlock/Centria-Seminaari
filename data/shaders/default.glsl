@@ -1,9 +1,12 @@
 
 #ifdef COMPILE_FRAGMENT
+    #define varying in
+    
     precision mediump float;
 #endif
 
 #ifdef COMPILE_VERTEX
+    #define varying out
 
     uniform mat4 iModelViewMatrix;
     uniform mat4 iProjectionMatrix;

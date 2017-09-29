@@ -29,7 +29,7 @@
 
         /// Which shader to use?
         this.shader = null;
-        this.drawType = "solid"; // points|wireframe|solid
+        this.drawType = "triangles"; // points|triangles
 
         /// Texture mapping.
         this.textures = new Map();
@@ -44,5 +44,6 @@
         this.shaderUniforms = new Map();
 
         this.defines = new Map();
-    }
+    };
+
 })(this);

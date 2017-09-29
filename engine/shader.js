@@ -7,11 +7,11 @@
             this.name = name;
             this.source = source;
         }
-    }
+    };
 
     context.buildShaderKey = function(name, defines) {
-        return name + ";" + Array.from(defines).join(";").
-    }
+        return name + ";" + Array.from(defines).join(";");
+    };
 
     /**
      * HOX! Do not modify any of these values except lastUse, after the shader has been cached.
@@ -33,7 +33,7 @@
          * Should be called after defines or name is modified
          */
         updateKey() {
-            this.key = buildShaderKey(this.source.name, this.defines);
+            this.key = context.buildShaderKey(this.source.name, this.defines);
         }
     };
 

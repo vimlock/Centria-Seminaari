@@ -1,9 +1,9 @@
 "use strict";
 
 (function (context) {
-    context.Geometry = function() {
-        this.indexOffset = 0;
-        this.indexCount = 0; 
-        this.model = null;
+    context.Geometry = function(offset, count, mesh) {
+        this.indexOffset = offset;
+        this.indexCount = count; 
+        this.mesh = mesh;
     };
 })(this);

@@ -2,7 +2,7 @@
 
 (function(context) {
 
-    context.Quaternion = class
+    context.Quaternion = class Quaternion
     {
         constructor(w, x, y, z) {
             this.w = w;
@@ -30,5 +30,6 @@
         static get identity() {
             return new Quaternion(1.0, 0.0, 0.0, 0.0);
         }
-    }
+    };
+
 })(this);

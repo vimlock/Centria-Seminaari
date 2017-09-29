@@ -8,6 +8,16 @@
     const SHADER_VERSION = "#version 300 es";
     const SHADER_PREAMBLE = "";
 
+    function GetDrawType(gl, material) {
+        switch (material.drawType) {
+        case "points":
+            return gl.POINTS;
+        case "wireframe":
+        default:
+            return gl.TRIANGLES;
+        }
+    }
+
     /**
      * Holds the geometries which are collected from the scene
      * during rendering.
@@ -70,33 +80,35 @@
             let opaqueGeomBatches = [];
             let transparentGeomBatches = [];
 
+            let renderer = this;
+
             scene.walkEnabled(function(node) {
 
                 // Pick the lights
                 let light = node.getComponent(Light);
                 if (light) {
-                    this.queueLight(lights, light, node.transform);
+                    renderer._queueLight(lights, light, node.transform);
                 }
 
                 // Pick the models
                 let model = node.getComponent(Model);
                 if (model && model.mesh) {
 
-                    this.performance.numModels++;
+                    renderer.performance.numModels++;
 
                     model.mesh.geometries.forEach(function (geometry, index) {
-                        let material = model.getMaterial(index) || this.defaultMaterial;
-                    });
-
-                    for (let geom of model.geometries) {
+                        let material = model.getMaterial(index) || renderer.defaultMaterial;
+                        if (!material) {
+                            return;
+                        }
 
                         if (material.opaque) {
-                            this.queueGeometry(opaqueGeomBatches, material, batch, node.worldTransform);
+                            renderer._queueGeometry(opaqueGeomBatches, geometry, material, node.worldTransform);
                         }
                         else {
-                            this.queueGeometry(transparentGeomBatches, material, node.worldTransform);
+                            renderer._queueGeometry(transparentGeomBatches, geometry, material, node.worldTransform);
                         }
-                    }
+                    });
                 }
 
                 // Pick a camera, if we have not found one yet
@@ -107,7 +119,7 @@
 
 
             if (!camera) {
-                console.log("No camera found to render scene with")
+                console.log("No camera found to render scene with");
                 return;
             }
 
@@ -161,7 +173,7 @@
          * Add light to a batch
          */
         _queueLight(batches, light, transform) {
-            lights.push(new LightBatch(transform, light));
+            batches.push(new LightBatch(transform, light));
         }
 
         /**
@@ -177,27 +189,79 @@
             // TODO: Maybe add instancing support? Might be out of scope
             // TODO: Sort the batches by material before rendering
             
+            let gl = this.glContext;
+
+            gl.enable(gl.DEPTH_TEST);
+            gl.enable(gl.CULL_FACE);
+            gl.frontFace(gl.CW);
+
+            this.performance.batches += batches.length;
+            
             for (let batch of batches) {
                 
                 let geo = batch.geometry;
+                let mesh = batch.geometry.mesh;
+
                 let mat = batch.material;
 
-                this._bindMesh(geo.mesh);
+                let drawType = GetDrawType(gl, mat);
+
+                if (!mat) {
+                    console.log("batch without material");
+                    continue;
+                }
+
+                if (!geo) {
+                    console.log("batch without geometry");
+                    continue;
+                }
+
                 this._bindMaterial(mat);
+                this._bindMesh(mesh);
+                this._bindCamera(camera);
 
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
                     continue;
 
                 for (let t of batch.transforms) {
                     this.performance.numDrawCalls++;
-                    this.performance.vertices += geom.indexCount;
+                    this.performance.vertices += geo.indexCount;
 
-                    // TODO: render the object
+                    this._bindTransform(t);
+
+                    gl.drawElements(drawType, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
             }
         }
 
+        /**
+         * Should be called after binding the shader
+         */
+        _bindCamera(cam) {
+            let uniforms = this.activeShader.uniformLocations;
+            let gl = this.glContext;
+
+            this.activeCamera = cam;
+
+            this.cameraViewMatrix = cam.node.worldTransform;
+            this.cameraProjectionMatrix = cam.projectionMatrix;
+
+            gl.uniformMatrix4fv(uniforms.projectionMatrix, false, this.cameraProjectionMatrix);
+        }
+
+        /**
+         * Should be called after binding the shader
+         */
         _bindTransform(transform) {
+            let uniforms = this.activeShader.uniformLocations;
+            let gl = this.glContext;
+
+            let m = mat4.multiply(this.cameraViewMatrix, transform);
+            // let m = mat4.multiply(transform, this.cameraViewMatrix);
+
+            // console.log(m);
+
+            gl.uniformMatrix4fv(uniforms.modelViewMatrix, false, m);
         }
 
         /**
@@ -210,12 +274,30 @@
 
             this.performance.numMeshChanges++;
             this.activeMesh = mesh;
+
+            let gl = this.glContext;
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+
+            mesh.attributes.forEach(function(attrib, index) {
+                gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false,
+                    mesh.vertexSize,
+                    4 * attrib.offset
+                );
+                gl.enableVertexAttribArray(index);
+            });
+
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+
+            console.log("bound mesh");
+            console.log(mesh);
         }
 
         /**
          * Setups a material for rendering
          */
         _bindMaterial(material) {
+
             if (material === this.activeMaterial) {
                 return;
             }
@@ -223,7 +305,12 @@
             this.performance.numMaterialChanges++;
             this.activeMaterial = material;
 
-            this._bindShader(_getShaderProgram(material.shader, material.defines));
+            this._bindShader(this._getShaderProgram(material.shader, material.defines));
+
+            let uniforms = this.activeShader.uniformLocations;
+            let gl = this.glContext;
+
+            gl.uniform4fv(uniforms.diffuseColor, material.diffuseColor.toArray());
         }
 
         _bindShader(shaderProgram) {
@@ -236,7 +323,7 @@
 
             let gl = this.glContext;
 
-            gl.useProgram(shader.program);
+            gl.useProgram(shaderProgram.program);
         }
 
         /**
@@ -247,6 +334,7 @@
             this.performance.numDrawCalls = 0;
             this.performance.numModels = 0;
             this.performance.numLights = 0;
+            this.performance.batches = 0;
 
             this.performance.numMeshChanges = 0;
             this.performance.numMaterialChanges = 0;
@@ -255,15 +343,22 @@
 
         _getShaderProgram(shader, defines) {
 
+            if (!shader)
+                return null;
+
             // Try to get cached shader first
-            let key = buildShaderKey(name, defines);
+            let key = buildShaderKey(shader.name, defines);
 
             if (key in this.shaderCache) {
                 return this.shaderCache[key];
             }
 
-            let program = this._buildShaderProgram(name, defines);
+            let program = this._createShaderProgram(shader, defines);
             this.shaderCache[key] = program;
+
+            if (program) {
+                console.log("Compiled shader " + key);
+            }
 
             return program;
         }
@@ -281,11 +376,11 @@
         _createShaderProgram(shader, defines) {
             let gl = this.glContext;
 
-            let vertexShader = this._createShader(shader.name, shader.source, gl.VERTEX_SHADER);
+            let vertexShader = this._createShader(shader.name, shader.source, gl.VERTEX_SHADER, defines);
             if (!vertexShader)
                 return null;
 
-            let fragmentShader = this._createShader(shader.name, shader.source, gl.FRAGMENT_SHADER);
+            let fragmentShader = this._createShader(shader.name, shader.source, gl.FRAGMENT_SHADER, defines);
             if (!fragmentShader)
                 return null;
 
@@ -307,7 +402,26 @@
             prog.program = program;
             prog.defines = defines;
 
+            prog.uniformLocations = {
+                modelViewMatrix: gl.getUniformLocation(program, "uModelViewMatrix"),
+                projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
+                diffuseColor: gl.getUniformLocation(program, "uDiffuseColor"),
+            };
+
+            prog.attribLocations = {
+                position: gl.getAttribLocation(program, "iPosition"),
+                color: gl.getAttribLocation(program, "iColor"),
+            };
+
             prog.updateKey();
+
+            Object.keys(prog.uniformLocations).forEach(function(key) {
+                console.log("uniform " + key + " at " + prog.uniformLocations[key]);
+            });
+
+            Object.keys(prog.attribLocations).forEach(function(key) {
+                console.log("attrib " + key + " at " + prog.attribLocations[key]);
+            });
 
             return prog;
         }
@@ -359,6 +473,8 @@
                 console.log("Failed to compile " + typeName + " shader " +
                     buildShaderKey(name, defines) + " : " + gl.getShaderInfoLog(shader));
 
+                console.log(modifiedSource);
+
                 gl.deleteShader(shader);
                 return null;
             }
@@ -371,6 +487,6 @@
          */
         _clearShaderCache(lastUsed) {
         }
-    }
+    };
 
 })(this);

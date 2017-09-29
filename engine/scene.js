@@ -26,7 +26,7 @@ engine.scene[0] = {};
      * other Entity-Component-Systems, except the "System" part is not really
      * implemented here.
      */
-    context.SceneNode = class {
+    context.SceneNode = class SceneNode {
 
         constructor(name = "") {
             this.worldTransform = mat4.identity();
@@ -48,7 +48,7 @@ engine.scene[0] = {};
             let dirty = force || this.worldTransformDirty;
 
             if (dirty && parent) {
-                worldTransform = mat4.multiply(parent.worldTransform, this.localTransform);
+                this.worldTransform = mat4.multiply(parent.worldTransform, this.localTransform);
                 this.worldTransformDirty = false;
             }
 
@@ -109,15 +109,17 @@ engine.scene[0] = {};
 
         createComponent(type) {
             let tmp = new type();
+            tmp.node = this;
+
             this.components.push(tmp);
             
             return tmp;
         }
 
         getComponent(type) {
-            for (let child of this.children) {
-                if (child instanceof type) {
-                    return child;
+            for (let c of this.components) {
+                if (c instanceof type) {
+                    return c;
                 }
             }
 
