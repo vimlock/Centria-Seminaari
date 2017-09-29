@@ -227,6 +227,8 @@
 
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
+            gl.enable(gl.DITHER);
+
             gl.frontFace(gl.CW);
 
             this.performance.batches += batches.length;
