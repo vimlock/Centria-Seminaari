@@ -205,7 +205,8 @@ vec4 GetLighting(vec4 diffColor)
     vec3 normal = normalize(vNormal);
 
     for (int i = 0; i < 4; ++i) { //>
-        vec3 surfaceToLight = normalize(uLights[i].position - vWorldPos); 
+        vec3 surfaceToLightDelta = uLights[i].position - vWorldPos;
+        vec3 surfaceToLight = normalize(surfaceToLightDelta); 
         vec3 surfaceToView = normalize(uViewPosition - vWorldPos);
         
         vec3 halfVector = normalize(surfaceToLight + surfaceToView);
@@ -215,8 +216,11 @@ vec4 GetLighting(vec4 diffColor)
         if (diffFactor > 0.0)
             specFactor = pow(max(dot(normal, halfVector), 0.0), 400.0);
 
+        float atten = clamp(1.0 - uLights[i].range / length(surfaceToLightDelta), 0.0, 1.0);
+        atten = 1.0 - pow(atten, 2.0);
+
         lighting.rgb += (diffColor.rgb * uLights[i].color.rgb * diffFactor +
-                        uSpecularColor.rgb * specFactor) * uLights[i].color.a;
+                        uSpecularColor.rgb * specFactor) * uLights[i].color.a * atten;
 
         // lighting.rgb += diffFactor * vec3(0.1, 0.1, 0.1);
         // lighting.rgb += specFactor * vec3(1.0, 1.0, 1.0);
@@ -260,7 +264,7 @@ void main()
     #endif
 
     #ifdef VERTEX_COLORS
-        col.rgb *= vColor;
+        //col.rgb *= vColor;
     #else
         col *= vec4(0.0, 1.0, 1.0, 1.0);
     #endif
