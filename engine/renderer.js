@@ -285,6 +285,7 @@
             this.cameraProjectionMatrix = cam.projectionMatrix;
 
             gl.uniformMatrix4fv(uniforms.projectionMatrix, false, this.cameraProjectionMatrix);
+            gl.uniformMatrix4fv(uniforms.normalMatrix, false, mat4.transpose(mat4.invert(this.cameraViewMatrix)));
         }
 
         /**
@@ -443,6 +444,7 @@
             prog.uniformLocations = {
                 modelViewMatrix: gl.getUniformLocation(program, "uModelViewMatrix"),
                 projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
+                normalMatrix: gl.getUniformLocation(program, "uNormalMatrix"),
                 diffuseColor: gl.getUniformLocation(program, "uDiffuseColor"),
             };
 
