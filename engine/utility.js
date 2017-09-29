@@ -330,11 +330,11 @@
         },
 
         distance: function(a, b) {
-            return this.length(this.substract(a, b));
+            return this.length(this.subtract(a, b));
         },
 
         distanceSquared: function(a, b) {
-            return this.lengthSquared(this.substract(a, b));
+            return this.lengthSquared(this.subtract(a, b));
         },
 		
 		rotateX: function(angle) {
