@@ -1,5 +1,6 @@
 (function() {
 	
+	
 	//  Holds all function that return 16 cell arrays (4x4, 3d matrices)
 	this.mat4 = {
 		
