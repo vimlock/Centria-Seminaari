@@ -150,7 +150,7 @@ void main()
     vec4 pos = uModelViewMatrix * vec4(iPosition, 1.0);
     pos = uProjectionMatrix * pos;
 
-    vWorldPos = (uModelMatrix * vec4(iPosition, 1.0)).xyz;;
+    vWorldPos = (uModelMatrix * vec4(iPosition, 1.0)).xyz;
 
     #ifdef VERTEX_COLORS
         vColor = iColor;
@@ -192,7 +192,7 @@ uniform vec4 uAmbientColor;
 uniform vec3 uEmission;
 
 #ifdef LIGHTS
-uniform Light uLights[4];
+uniform Light uLights[MAX_LIGHTS];
 uniform vec3 uViewForward;
 uniform vec3 uViewPosition;
 #endif
@@ -204,7 +204,7 @@ vec4 GetLighting(vec4 diffColor)
     vec4 lighting = vec4(0.0, 0.0, 0.0, 1.0);
     vec3 normal = normalize(vNormal);
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < MAX_LIGHTS; ++i) {
         vec3 surfaceToLightDelta = uLights[i].position - vWorldPos;
         vec3 surfaceToLight = normalize(surfaceToLightDelta); 
         vec3 surfaceToView = normalize(uViewPosition - vWorldPos);

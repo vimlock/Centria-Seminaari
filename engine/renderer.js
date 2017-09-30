@@ -2,12 +2,17 @@
 
 (function(context) {
 
-    const MAX_LIGHTS = 8;
+    const MAX_LIGHTS = 4;
     const MAX_TEXTURES = 8;
 
     const SHADER_VERSION = "#version 300 es";
     const SHADER_PREAMBLE = "";
 
+    /**
+     * Converts a draw type string into appropriate WebGL draw type enum.
+     *
+     * If invalid string is given, gl.TRIANGLES is returned.
+     */
     function GetDrawType(gl, material) {
         switch (material.drawType) {
         case "points":
@@ -130,7 +135,7 @@
                 l.priority = vec3.distanceSquared(mat4.getTranslation(l.transform), camPosition) * l.intensity;
             }
 
-            this._cullLights(camera, lights, 4);
+            this._cullLights(camera, lights, MAX_LIGHTS);
 
             let gl = this.glContext;
             gl.clearColor( ...scene.background.toArray());
@@ -195,8 +200,8 @@
         _cullLights(camera, lights, maxLights) {
 
             // Some sanity checking, shaders wont supports any more than this
-            if (maxLights > MAX_LIGHTS)
-                maxLights = MAX_LIGHTS;
+            if (maxLights > 8)
+                maxLights = 8;
 
             // Do we have to do anything?
             if (lights.length < maxLights) {
@@ -277,7 +282,7 @@
             let gl = this.glContext;
             let uniforms = this.activeShader.lightUniformLocations;
 
-            for (let i = 0; i < 4; ++i) {
+            for (let i = 0; i < MAX_LIGHTS; ++i) {
                 if (i < lights.length) {
                     let light = lights[i].light;
 
@@ -551,6 +556,7 @@
             let modifiedSource = SHADER_VERSION + "\n" +
                 SHADER_PREAMBLE + "\n" +
                 "#define " + typeDefine + "\n" +
+                "#define MAX_LIGHTS " + MAX_LIGHTS + "\n" +
                 this._buildShaderDefines(defines) + "\n" +
                 "#line 1\n" +
                 source;
