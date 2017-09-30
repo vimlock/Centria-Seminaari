@@ -17,6 +17,9 @@
             this.materials = [];
         }
 
+        /**
+         * Shorthand for this.materials[0];
+         */
         get material() {
             if (this.materials.length > 0)
                 return this.materials[0];
@@ -24,10 +27,18 @@
                 return null;
         }
 
+        /**
+         * Shorthand for this.materials[0] = value;
+         */
         set material(value) {
             this.materials[0] = value;
         }
 
+        /**
+         * Safely gets a material by given index.
+         *
+         * If the index does not exist, null is returned.
+         */
         getMaterial(index) {
             if (index < this.materials.length) {
                 return this.materials[index];

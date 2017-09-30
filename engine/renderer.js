@@ -277,6 +277,10 @@
             }
         }
 
+        /**
+         * Should be called after binding the shader.
+         * Sets the lighting uniforms in the shader.
+         */
         _bindLights(lights) {
 
             let gl = this.glContext;
@@ -299,7 +303,8 @@
         }
 
         /**
-         * Should be called after binding the shader
+         * Should be called after binding the shader.
+         * Sets the camera uniforms in the shader.
          */
         _bindCamera(cam) {
             let uniforms = this.activeShader.uniformLocations;
@@ -318,7 +323,8 @@
         }
 
         /**
-         * Should be called after binding the shader
+         * Should be called after binding the shader.
+         * Sets the transform uniforms in the shader.
          */
         _bindTransform(transform) {
             let uniforms = this.activeShader.uniformLocations;
@@ -335,7 +341,7 @@
         }
 
         /**
-         * Setups a mesh for rendering
+         * Setups a mesh for rendering.
          */
         _bindMesh(mesh) {
             if (mesh === this.activeMesh) {
@@ -358,9 +364,6 @@
             });
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-
-            console.log("bound mesh");
-            console.log(mesh);
         }
 
         /**
@@ -412,6 +415,17 @@
             this.performance.numShaderChanges = 0;
         }
 
+        /**
+         * Returns a shader program with the given defines.
+         * A new shader will be compiled if one does not already exist.
+         *
+         * If the shader compilation fails, null is returned
+         *
+         * @param shader {ShaderSource} Shader to compile.
+         * @param defines {Map.<string, string|null> Defines to use
+         *
+         * @returns {null|ShaderProgram}
+         */
         _getShaderProgram(shader, defines) {
 
             if (!shader)
@@ -435,14 +449,23 @@
         }
 
         /**
-         * 
+         * Returns a shader based on the shader key generated with buildShaderKey()
+         *
+         * If the shader has been compiled, the shader program is returned.
+         * If the shader was compiled but the compilation failed, null is returned.
+         * If the shader has not been compiled or does not exist, undefined is returned.
+         *
+         * @returns {null|undefined|ShaderProgram} 
          */
         _getCachedShaderProgram(shaderKey) {
             return this.shaderCache[shaderKey];
         }
 
         /**
-         * Compiles a shader with given defines
+         * Compiles a shader program with given defines
+         *
+         * @param shader {ShaderSource} Shader to compile.
+         * @param defines {Map.<string, string|null> Defines to use
          */
         _createShaderProgram(shader, defines) {
             let gl = this.glContext;
@@ -522,6 +545,20 @@
             return prog;
         }
 
+        /**
+         * Returns a string which can be passed on to WebGL shader preprocessor.
+         *
+         * Contents of the string will look like
+         *
+         * #define key1 value1
+         * #define key2
+         * #define key3 value3
+         * ...
+         *
+         *
+         * @param defines {Map.<string, string|null> Defines to use
+         * @returns string
+         */
         _buildShaderDefines(defines) {
             return Array.from(defines.keys()).sort().map(function(key) {
                 let val = defines[key];
@@ -534,6 +571,9 @@
             }).join("");
         }
 
+        /**
+         * Compiles a shader object which can be linked on to a shader program
+         */
         _createShader(name, source, type, defines) {
             let gl = this.glContext;
 
@@ -583,6 +623,7 @@
          * Remove unused shaders
          */
         _clearShaderCache(lastUsed) {
+            // TODO
         }
     };
 
