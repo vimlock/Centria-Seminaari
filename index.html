@@ -226,7 +226,7 @@ vec4 GetLighting(vec4 diffColor)
         // lighting.rgb += specFactor * vec3(1.0, 1.0, 1.0);
     }
 
-    return lighting;
+    return lighting + uAmbientColor;
 }
 
 vec4 GetDiffuse()
@@ -493,6 +493,7 @@ function sceneTest() {
     engine.input = initInput();
 
     let scene = new Scene();
+    scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
 
     let mesh = buildTestMesh(
         engine.models.cube.vertices,
