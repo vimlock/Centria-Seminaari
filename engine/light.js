@@ -13,7 +13,7 @@
         this.color = Color.white;
 
         /// How far this light has effect at most
-        this.range = 10.00;
+        this.range = 5.00;
 
         /// Multiplies the effect of this light
         this.intensity = 1.0;
