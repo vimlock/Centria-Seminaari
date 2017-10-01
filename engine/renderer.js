@@ -5,6 +5,13 @@
     const MAX_LIGHTS = 4;
     const MAX_TEXTURES = 8;
 
+    /// If batch size does not exceed this limit, non-instanced draw calls will be used.
+    /// This is because instancing has some overhead to it.
+    const MIN_INSTANCES_PER_BATCH = 5;
+
+    /// How many instances can be drawn in a single instanced draw call.
+    const MAX_INSTANCES_PER_BATCH = 256;
+
     const SHADER_VERSION = "#version 300 es";
     const SHADER_PREAMBLE = "";
 
@@ -65,6 +72,12 @@
             this.activeMaterial = null;
             this.activeMesh = null;
             this.activeShader = null;
+
+            this.enableInstancing = true;
+
+            if (this.enableInstancing) {
+                this._createInstancingBuffer();
+            }
         }
 
         /**
@@ -243,7 +256,6 @@
                 
                 let geo = batch.geometry;
                 let mesh = batch.geometry.mesh;
-
                 let mat = batch.material;
 
                 let drawType = GetDrawType(gl, mat);
@@ -258,7 +270,20 @@
                     continue;
                 }
 
-                this._bindMaterial(mat);
+                let instanced = this.enableInstancing && mat.allowInstancing
+                     && batch.transforms.length > MIN_INSTANCES_PER_BATCH;
+                if (instanced) {
+                    //this._bindMaterial(mat, new Map([...mat.defines, ["INSTANCING", null]]));
+                    this._bindMaterial(mat, mat.defines);
+                }
+                else {
+                    this._bindMaterial(mat, mat.defines);
+                }
+
+                if (!this.activeShader) {
+                    continue;
+                }
+
                 this._bindMesh(mesh);
                 this._bindCamera(camera);
                 this._bindLights(lights);
@@ -266,8 +291,10 @@
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
                     continue;
 
-                if (mat.allowInstancing) {
-                    // TODO
+                this.performance.vertices += geo.indexCount * batch.transforms.length;
+
+                if (instanced) {
+                    this._drawInstanced(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
                 else {
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
@@ -285,11 +312,11 @@
             let gl = this.glContext;
 
             for (let t of batch.transforms) {
-                this.performance.numDrawCalls++;
-
                 this._bindTransform(t);
 
                 gl.drawElements(drawType, indexCount, indexType, indexOffset);
+
+                this.performance.numDrawCalls++;
             }
         }
 
@@ -299,7 +326,53 @@
          *
          * @param batch {Array.<GeometryBatch>}
          */
-        _drawInstanced(batch) {
+        _drawInstanced(drawType, batch, indexCount, indexType, indexOffset) {
+            let gl = this.glContext;
+
+            // Buffer which we can use to hold matrices, should have room for
+            // MAX_INSTANCES_PER_BATCH matrices.
+            let matrices = this.instancingMatrices;
+
+            let numTransforms = batch.transforms.length;
+            let instanceNum = 0;
+
+            let attribOffset = this.activeShader.attribLocations.instanceModelMatrix;
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.instancingBuffer);
+
+            // Enable the instancing attributes and setup instancing divisor
+            // TODO: should we disable divisor after rendering?
+            for (let n = 0; n < 4; n++) {
+                gl.enableVertexAttribArray(attribOffset + n);
+                gl.vertexAttribDivisor(attribOffset + n, 1);
+                gl.vertexAttribPointer(attribOffset + n, 4, gl.FLOAT, false, 16 * 4, n * 16);
+            }
+
+            for (let index = 0; index < batch.transforms.length; ++index) {
+                let transform = batch.transforms[index];
+
+                // Concatenate the matrices into a buffer
+                let offset = instanceNum * 16;
+                for (let k = 0; k < 16; k++) {
+                    matrices[offset + k] = transform[k];
+                }
+
+                instanceNum++;
+
+                // Clear batch if this was the last one or the batch is full
+                if (instanceNum >= MAX_INSTANCES_PER_BATCH || instanceNum >= numTransforms) {
+
+                    // Upload the updated transform buffer to the GPU 
+                    let sub = matrices.subarray(0, instanceNum * 16);
+                    gl.bufferSubData(gl.ARRAY_BUFFER, 0, sub);
+
+                    // Finally, it's draw time.
+                    gl.drawElementsInstanced(drawType, indexCount, indexType, indexOffset, instanceNum);
+
+                    this.performance.numDrawCalls++;
+                    instanceNum = 0;
+                }
+            }
         }
 
         /**
@@ -340,7 +413,11 @@
             this.cameraViewMatrix = cam.node.worldTransform;
             this.cameraProjectionMatrix = cam.projectionMatrix;
 
+            gl.uniformMatrix4fv(uniforms.viewMatrix, false, this.cameraViewMatrix);
             gl.uniformMatrix4fv(uniforms.projectionMatrix, false, this.cameraProjectionMatrix);
+            gl.uniformMatrix4fv(uniforms.inverseViewMatrix, false, mat4.invert(this.cameraViewMatrix));
+            gl.uniformMatrix4fv(uniforms.viewProjectionMatrix, false,
+                mat4.multiply(this.cameraProjectionMatrix, this.cameraViewMatrix));
 
             gl.uniform4fv(uniforms.ambientColor, cam.node.scene.ambientColor.toArray());
             gl.uniform3fv(uniforms.viewForward, cam.node.forward);
@@ -393,7 +470,7 @@
         /**
          * Setups a material for rendering
          */
-        _bindMaterial(material) {
+        _bindMaterial(material, defines) {
 
             if (material === this.activeMaterial) {
                 return;
@@ -402,7 +479,10 @@
             this.performance.numMaterialChanges++;
             this.activeMaterial = material;
 
-            this._bindShader(this._getShaderProgram(material.shader, material.defines));
+            this._bindShader(this._getShaderProgram(material.shader, defines));
+            if (!this.activeShader) {
+                return;
+            }
 
             let uniforms = this.activeShader.uniformLocations;
             let gl = this.glContext;
@@ -437,6 +517,23 @@
             this.performance.numMeshChanges = 0;
             this.performance.numMaterialChanges = 0;
             this.performance.numShaderChanges = 0;
+        }
+
+        /**
+         * Initializes a streaming buffer which holds per-instance model matrices
+         */
+        _createInstancingBuffer() {
+            let gl = this.glContext;
+
+            // sizeof(mat4) * MAX_INSTANCES_PER_BATCH;
+            let size = 16 * 4 * MAX_INSTANCES_PER_BATCH;
+
+            let b = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, b);
+            gl.bufferData(gl.ARRAY_BUFFER, size, gl.STREAM_DRAW);
+
+            this.instancingBuffer = b;
+            this.instancingMatrices = new Float32Array(16 * MAX_INSTANCES_PER_BATCH);
         }
 
         /**
@@ -521,14 +618,19 @@
             prog.defines = defines;
 
             prog.uniformLocations = {
-                modelViewMatrix: gl.getUniformLocation(program, "uModelViewMatrix"),
-                projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
                 modelMatrix: gl.getUniformLocation(program, "uModelMatrix"),
+                modelViewMatrix: gl.getUniformLocation(program, "uModelViewMatrix"),
+
                 diffuseColor: gl.getUniformLocation(program, "uDiffuseColor"),
                 specularColor: gl.getUniformLocation(program, "uSpecularColor"),
                 ambientColor: gl.getUniformLocation(program, "uAmbientColor"),
+
+                viewMatrix: gl.getUniformLocation(program, "uViewMatrix"),
                 viewForward: gl.getUniformLocation(program, "uViewForward"),
                 viewPosition: gl.getUniformLocation(program, "uViewPosition"),
+                viewProjectionMatrix: gl.getUniformLocation(program, "uViewProjectionMatrix"),
+
+                projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
             };
 
             // Lights are a bit of a special case.
@@ -545,21 +647,25 @@
                 position: gl.getAttribLocation(program, "iPosition"),
                 color: gl.getAttribLocation(program, "iColor"),
                 normal: gl.getAttribLocation(program, "iNormal"),
+                instanceModelMatrix: gl.getAttribLocation(program, "iInstanceModelMatrix"),
             };
 
             prog.updateKey();
 
-            /*
-            Object.keys(prog.uniformLocations).forEach(function(key) {
-                console.log("uniform " + key + " at " + prog.uniformLocations[key]);
-            });
+            let uniforms = Object.entries(prog.uniformLocations).
+                filter(x => x[1] != null).
+                map(x => x[0]).
+                join(", ");
+
+            console.log("uniforms " + uniforms);
 
             prog.lightUniformLocations.forEach(function(value, index) {
                 Object.keys(prog.uniformLocations).forEach(function(key) {
-                    console.log("light " + index + " uniform " + key + " at " + prog.uniformLocations[key]);
+                    if (prog.lightUniformLocations[index][key]) {
+                        console.log("light " + index + " uniform " + key);
+                    }
                 });
             });
-            */
 
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);

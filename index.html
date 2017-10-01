@@ -101,6 +101,9 @@ void main() {
     uniform mat4 uModelMatrix;
     uniform mat4 uProjectionMatrix;
 
+    uniform mat4 uViewProjectionMatrix;
+    uniform mat4 uViewMatrix;
+
     in vec3 iPosition;
 
     #ifdef VERTEX_COLORS
@@ -117,6 +120,10 @@ void main() {
 
     #ifdef NORMALMAP
         in vec3 iTangent;
+    #endif
+
+    #ifdef INSTANCING
+        in mat4 iInstanceModelMatrix;
     #endif
 
 #endif
@@ -146,18 +153,30 @@ varying vec3 vWorldPos;
 
 void main()
 {
-    vec4 pos = uModelViewMatrix * vec4(iPosition, 1.0);
-    pos = uProjectionMatrix * pos;
+    #ifdef INSTANCING
+        vec4 pos = iInstanceModelMatrix * vec4(iPosition, 1.0);
+        vWorldPos = pos.xyz;
 
-    vWorldPos = (uModelMatrix * vec4(iPosition, 1.0)).xyz;
+        pos = uViewProjectionMatrix * pos;
+
+        #ifdef NORMALS
+            vNormal = normalize((mat3(iInstanceModelMatrix) * iNormal));
+        #endif
+
+    #else
+        vec4 pos = uModelViewMatrix * vec4(iPosition, 1.0);
+        pos = uProjectionMatrix * pos;
+        vWorldPos = (uModelMatrix * vec4(iPosition, 1.0)).xyz;
+
+        #ifdef NORMALS
+            vNormal = normalize((mat3(uModelViewMatrix) * iNormal));
+        #endif
+    #endif
 
     #ifdef VERTEX_COLORS
         vColor = iColor;
     #endif
 
-    #ifdef NORMALS
-        vNormal = normalize((mat3(uModelViewMatrix) * iNormal));
-    #endif
 
     #if defined(DIFFUSEMAP) || defined(NORMALMAP)
         vTexCoord = iTexCoord;
@@ -203,7 +222,7 @@ vec4 GetLighting(vec4 diffColor)
     vec4 lighting = vec4(0.0, 0.0, 0.0, 1.0);
     vec3 normal = normalize(vNormal);
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < MAX_LIGHTS; ++i) {
         vec3 surfaceToLightDelta = uLights[i].position - vWorldPos;
         vec3 surfaceToLight = normalize(surfaceToLightDelta); 
         vec3 surfaceToView = normalize(uViewPosition - vWorldPos);
@@ -263,7 +282,7 @@ void main()
     #endif
 
     #ifdef VERTEX_COLORS
-        //col.rgb *= vColor;
+        col.rgb *= vColor;
     #else
         col *= vec4(0.0, 1.0, 1.0, 1.0);
     #endif
@@ -376,7 +395,7 @@ function spawnCubes(scene, mesh, material, num)
         let scale = 0.75 + random(0.7);
 
         cubeNode.worldTransform = mat4.multiply(
-            mat4.translate(random(30.0), random(30.0), random(30.0)),
+            mat4.translate(random(50.0), random(50.0), random(50.0)),
             mat4.scale(scale, scale, scale) 
         );
 
@@ -507,12 +526,13 @@ function sceneTest() {
         document.getElementById("test-shader").innerHTML);
 
     material.defines = new Map([
-        ["VERTEX_COLORS", null],
+        // ["VERTEX_COLORS", null],
         ["NORMALS", null],
         ["LIGHTS", null],
+        ["INSTANCING", null],
     ]);
 
-    spawnCubes(scene, mesh, material, 999);
+    spawnCubes(scene, mesh, material, 10000);
 
     let cubeNode = scene.createChild("Cube");
     cubeNode.worldTransform = mat4.identity();
@@ -548,9 +568,11 @@ function sceneTest() {
         requestAnimationFrame(update);
 
         cubeNode.worldTransform = mat4.multiply(
-            mat4.rotateY(Date.now() * 0.0001),
-            mat4.rotateX(Date.now() * 0.0001)
+            mat4.rotateY(Date.now() * 0.00001),
+            mat4.rotateX(Date.now() * 0.00001)
         );
+
+        cubeNode.worldTransform = mat4.translate(0.0, 0, 0),
 
         // scene.updateHierarchy(false);
         scene.update();

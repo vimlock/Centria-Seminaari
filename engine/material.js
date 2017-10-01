@@ -28,7 +28,7 @@
         this.blendMode = "replace"; // add/alpha/multiply/replace
 
         /// Should the renderer be allowed use instancing when rendering?
-        this.allowInstancing = false;
+        this.allowInstancing = true;
 
         /// Which shader to use?
         this.shader = null;
