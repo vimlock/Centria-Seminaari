@@ -337,7 +337,6 @@
 
             gl.uniformMatrix4fv(uniforms.modelViewMatrix, false, m);
             gl.uniformMatrix4fv(uniforms.modelMatrix, false, transform);
-            gl.uniformMatrix4fv(uniforms.normalMatrix, false, mat4.transpose(mat4.invert(m)));
         }
 
         /**
@@ -500,7 +499,6 @@
                 modelViewMatrix: gl.getUniformLocation(program, "uModelViewMatrix"),
                 projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
                 modelMatrix: gl.getUniformLocation(program, "uModelMatrix"),
-                normalMatrix: gl.getUniformLocation(program, "uNormalMatrix"),
                 diffuseColor: gl.getUniformLocation(program, "uDiffuseColor"),
                 specularColor: gl.getUniformLocation(program, "uSpecularColor"),
                 ambientColor: gl.getUniformLocation(program, "uAmbientColor"),
