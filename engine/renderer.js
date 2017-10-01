@@ -266,15 +266,40 @@
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
                     continue;
 
-                for (let t of batch.transforms) {
-                    this.performance.numDrawCalls++;
-                    this.performance.vertices += geo.indexCount;
-
-                    this._bindTransform(t);
-
-                    gl.drawElements(drawType, geo.indexCount, mesh.indexType, geo.indexOffset);
+                if (mat.allowInstancing) {
+                    // TODO
+                }
+                else {
+                    this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
             }
+        }
+
+        /**
+         * Renders a batch using indivual draw calls.
+         * This function expects that materials, meshes, etc. are set up correctly.
+         *
+         * @param batch {Array.<GeometryBatch>}
+         */
+        _drawIndividual(drawType, batch, indexCount, indexType, indexOffset) {
+            let gl = this.glContext;
+
+            for (let t of batch.transforms) {
+                this.performance.numDrawCalls++;
+
+                this._bindTransform(t);
+
+                gl.drawElements(drawType, indexCount, indexType, indexOffset);
+            }
+        }
+
+        /**
+         * Renders a batch using instanced draw calls.
+         * This function expects that materials, meshes, etc. are set up correctly.
+         *
+         * @param batch {Array.<GeometryBatch>}
+         */
+        _drawInstanced(batch) {
         }
 
         /**

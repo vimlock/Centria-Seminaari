@@ -27,6 +27,9 @@
         /// How this material should be blended?
         this.blendMode = "replace"; // add/alpha/multiply/replace
 
+        /// Should the renderer be allowed use instancing when rendering?
+        this.allowInstancing = false;
+
         /// Which shader to use?
         this.shader = null;
         this.drawType = "triangles"; // points|triangles
