@@ -399,6 +399,7 @@ function spawnCubes(scene, mesh, material, num)
             mat4.scale(scale, scale, scale) 
         );
 
+        /*
         cubeNode.worldTransform = mat4.multiply(
                 cubeNode.worldTransform,
                 mat4.rotateX(random(360.0))
@@ -408,6 +409,7 @@ function spawnCubes(scene, mesh, material, num)
                 cubeNode.worldTransform,
                 mat4.rotateY(random(360.0))
         );
+        */
 
         let cube = cubeNode.createComponent(Model);
         cube.mesh = mesh;
