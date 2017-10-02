@@ -539,9 +539,18 @@ function sceneTest() {
         ["LIGHTS", null],
         ["INSTANCING", null],
     ]);
+	
+	
+	
+	
+	new ResourceManager().load(new VertexData(), "engine/resources/ball.obj", false);
+	
+    spawnCubes(scene, engine.resources.cache.ball.mesh, material, 10000);
 
-    spawnCubes(scene, mesh, material, 10000);
-
+	
+	
+	
+	
     let cubeNode = scene.createChild("Cube");
     cubeNode.worldTransform = mat4.identity();
 
