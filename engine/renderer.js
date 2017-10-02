@@ -277,9 +277,9 @@
 
                 let instanced = this.enableInstancing && mat.allowInstancing
                      && batch.transforms.length > MIN_INSTANCES_PER_BATCH;
+
                 if (instanced) {
-                    //this._bindMaterial(mat, new Map([...mat.defines, ["INSTANCING", null]]));
-                    this._bindMaterial(mat, mat.defines);
+                    this._bindMaterial(mat, new Map([...mat.defines, ["INSTANCING", null]]));
                 }
                 else {
                     this._bindMaterial(mat, mat.defines);
@@ -346,7 +346,6 @@
             gl.bindBuffer(gl.ARRAY_BUFFER, this.instancingBuffer);
 
             // Enable the instancing attributes and setup instancing divisor
-            // TODO: should we disable divisor after rendering?
             for (let n = 0; n < 4; n++) {
                 gl.enableVertexAttribArray(attribOffset + n);
                 gl.vertexAttribDivisor(attribOffset + n, 1);
@@ -377,6 +376,11 @@
                     this.performance.numDrawCalls++;
                     instanceNum = 0;
                 }
+            }
+
+            // Disable the divisors or otherwise they will mess with other draw calls.
+            for (let n = 0; n < 4; n++) {
+                gl.vertexAttribDivisor(attribOffset + n, 0);
             }
         }
 
@@ -481,14 +485,17 @@
          */
         _bindMaterial(material, defines) {
 
-            if (material === this.activeMaterial) {
+            // Even tough we have the same material, we might have a different shader variation
+            let shader = this._getShaderProgram(material.shader, defines);
+
+            if (material === this.activeMaterial && shader == this.activeShader) {
                 return;
             }
 
             this.performance.bindMaterial++;
             this.activeMaterial = material;
 
-            this._bindShader(this._getShaderProgram(material.shader, defines));
+            this._bindShader(shader);
             if (!this.activeShader) {
                 return;
             }
@@ -664,6 +671,7 @@
 
             prog.updateKey();
 
+            /*
             let uniforms = Object.entries(prog.uniformLocations).
                 filter(x => x[1] != null).
                 map(x => x[0]).
@@ -682,6 +690,7 @@
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);
             });
+            */
 
             return prog;
         }
