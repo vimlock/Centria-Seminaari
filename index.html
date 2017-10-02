@@ -377,8 +377,14 @@ function displayStatics(performance) {
         "<p>FPS: " + parseInt(performance.fps) + "</p>" +
         "<p>Vertices: " + performance.vertices + "</p>" +
         "<p>Draw Calls: " + performance.numDrawCalls + "</p>" +
-        "<p>Lights: " + performance.numLights + "</p>" +
-        "<p>Batches: " + performance.batches + "</p>";
+        "<p>Lights: " +     performance.numLights + "</p>" +
+        "<p>Batches: " +    performance.batches + "</p>" +
+        "<p> bindShader(): " +    performance.bindShader + "</p>" +
+        "<p> bindMaterial(): " +  performance.bindMaterial + "</p>"+
+        "<p> bindMesh(): " +      performance.bindMesh + "</p>"+
+        "<p> bindTexture(): " +   performance.bindTexture + "</p>"+
+        "<p> bindLights(): " +    performance.bindLights + "</p>"+
+        "<p> bindTransform(): " + performance.bindTransform + "</p>";
 
     div.innerHTML = html;
 }
