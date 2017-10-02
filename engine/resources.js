@@ -14,7 +14,7 @@ engine.resources = {
 			
 			/// Open a new request and set the preferred file transfer method
 			/// GET or POST. POST is more secure than GET
-			x.open("POST", sourceUrl, sync);
+			x.open("GET", sourceUrl, sync);
 			
 			/// If requesting an image, download a blob, else load plain text
 			x.responseType = type.img ? "blob" : ("text/plain", x.overrideMimeType("text/plain"));
@@ -145,3 +145,4 @@ engine.resources = {
 	
 	
 })(this);
+
