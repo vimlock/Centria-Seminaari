@@ -1,5 +1,6 @@
 (function() {
 	
+	
 	//  Holds all function that return 16 cell arrays (4x4, 3d matrices)
 	this.mat4 = {
 		
@@ -262,9 +263,12 @@
 				sin0, cos0,  0, 0,
 				0,    0,     1, 0,
 				0,    0,     0, 1 ];
-		}
+		},
 		
-	}
+        getTranslation: function(m) {
+            return [m[12], m[13], m[14]];
+        },
+    };
 	
 	
 	
@@ -313,10 +317,25 @@
 		},
 		
 		
-		scale: function(a) {
-			
+		scale: function(a, b) {
+            return [a[0] * b, a[1] * b, a[2] * b];
 		},
-		
+
+        length: function(a) {
+            return Math.sqrt(a[0] * a[0]  + a[1] * a[1] + a[2] * a[2]);
+        },
+
+        lengthSquared: function(a) {
+            return a[0] * a[0]  + a[1] * a[1] + a[2] * a[2];
+        },
+
+        distance: function(a, b) {
+            return this.length(this.subtract(a, b));
+        },
+
+        distanceSquared: function(a, b) {
+            return this.lengthSquared(this.subtract(a, b));
+        },
 		
 		rotateX: function(angle) {
 			
@@ -349,87 +368,55 @@
 	
 	
 	
-	this.Color = class {
-	
-	
-		constructor(r, g, b, a) {
-			this.r = r;
-			this.g = g;
-			this.b = b;
-			this.a = a;
-		}
-		
-		
-		fromArray(a) {
-			return new Color(a[0], a[1], a[2], a[3]);
-		}
-		
-		
-		toArray() {
-			return [ this.r, this.g, this.b, this.a ];
-		}
-		
-		
-		toHex() {
-			return [ this.r * 255, this.g * 255, this.b * 255, this.a * 255 ];
-		}
-		
-		
-		toHexString() {
-			return "#" +this.toHex().map(decToHexPadded).join("");
-		}
-		
-		
-		static get black() {
-			return new Color(0.0, 0.0, 0.0, 1.0);
-		}
-		
-		
-		static get white() {
-			return new Color(1.0, 1.0, 1.0, 1.0);
-		}
-		
-		
-		static get red() {
-			return new Color(1.0, 0.0, 0.0, 1.0);
-		}
-		
-		
-		static get green() {
-			return new Color(0.0, 1.0, 0.0, 1.0);
-		}
-		
-		
-		static get blue() {
-			return new Color(0.0, 0.0, 1.0, 1.0);
-		}
-		
-		
-		static get yellow() {
-			return new Color(1.0, 1.0, 0.0, 1.0);
-		}
-		
-		
-		static get cyan() {
-			return new Color(0.0, 1.0, 1.0, 1.0);
-		}
-		
-		
-		static get magenta() {
-			return new Color(1.0, 0.0, 1.0, 1.0);
-		}
-		
-		
-	}
-	
-	
-	
-	
-	
-	this.decToHexPadded = function(dec) {
-		let tmp = dec.toString(16);
-		return tmp.length < 2 ? '0' + tmp : tmp;
-	}
+    this.Color = class Color {
+        constructor(r, g, b, a) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+
+
+        fromArray(a) {
+            return new Color(a[0], a[1], a[2], a[3]);
+        }
+
+
+        toArray() {
+            return [ this.r, this.g, this.b, this.a ];
+        }
+
+
+        toHex() {
+            return [ this.r * 255, this.g * 255, this.b * 255, this.a * 255 ];
+        }
+
+
+        toHexString() {
+            return "#" +this.toHex().map(decToHexPadded).join("");
+        }
+
+        static get black()   { return new Color(0.0, 0.0, 0.0, 1.0); }
+        static get white()   { return new Color(1.0, 1.0, 1.0, 1.0); }
+        static get gray()    { return new Color(0.5, 0.5, 0.5, 1.0); }
+        static get red()     { return new Color(1.0, 0.0, 0.0, 1.0); }
+        static get green()   { return new Color(0.0, 1.0, 0.0, 1.0); }
+        static get blue()    { return new Color(0.0, 0.0, 1.0, 1.0); }
+        static get yellow()  { return new Color(1.0, 1.0, 0.0, 1.0); }
+        static get cyan()    { return new Color(0.0, 1.0, 1.0, 1.0); }
+        static get magenta() { return new Color(1.0, 0.0, 1.0, 1.0); }
+
+
+    }
+
+
+
+
+
+this.decToHexPadded = function(dec) {
+let tmp = dec.toString(16);
+return tmp.length < 2 ? '0' + tmp : tmp;
+}
 	
 	
 })(this);

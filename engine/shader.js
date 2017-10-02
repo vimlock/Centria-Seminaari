@@ -7,11 +7,22 @@
             this.name = name;
             this.source = source;
         }
-    }
+    };
 
     context.buildShaderKey = function(name, defines) {
-        return name + ";" + Array.from(defines).join(";").
-    }
+        let defineStrs = [];
+
+        defines.forEach(function(val, key) {
+            if (val === null) {
+                defineStrs.push(key);
+            }
+            else {
+                defineStrs.push(key + "=" + val);
+            }
+        });
+
+        return name + "(" + defineStrs.join(";") + ")";
+    };
 
     /**
      * HOX! Do not modify any of these values except lastUse, after the shader has been cached.
@@ -33,7 +44,7 @@
          * Should be called after defines or name is modified
          */
         updateKey() {
-            this.key = buildShaderKey(this.source.name, this.defines);
+            this.key = context.buildShaderKey(this.source.name, this.defines);
         }
     };
 
