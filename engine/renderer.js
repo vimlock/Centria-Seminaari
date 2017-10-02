@@ -241,6 +241,11 @@
             // TODO: Maybe add instancing support? Might be out of scope
             // TODO: Sort the batches by material before rendering
             
+            this.activeMaterial = null;
+            this.activeShader = null;
+            this.activeCamera = null;
+            this.activeMesh = null;
+            
             let gl = this.glContext;
 
             gl.enable(gl.DEPTH_TEST);
@@ -384,6 +389,8 @@
             let gl = this.glContext;
             let uniforms = this.activeShader.lightUniformLocations;
 
+            this.performance.bindLights++;
+
             for (let i = 0; i < MAX_LIGHTS; ++i) {
                 if (i < lights.length) {
                     let light = lights[i].light;
@@ -432,6 +439,8 @@
             let uniforms = this.activeShader.uniformLocations;
             let gl = this.glContext;
 
+            this.performance.bindTransform++;
+
             let m = mat4.multiply(this.cameraViewMatrix, transform);
             // let m = mat4.multiply(transform, this.cameraViewMatrix);
 
@@ -449,7 +458,7 @@
                 return;
             }
 
-            this.performance.numMeshChanges++;
+            this.performance.bindMesh++;
             this.activeMesh = mesh;
 
             let gl = this.glContext;
@@ -476,7 +485,7 @@
                 return;
             }
 
-            this.performance.numMaterialChanges++;
+            this.performance.bindMaterial++;
             this.activeMaterial = material;
 
             this._bindShader(this._getShaderProgram(material.shader, defines));
@@ -496,7 +505,7 @@
                 return;
             }
 
-            this.performance.numShaderChanges++;
+            this.performance.bindShader++;
             this.activeShader = shaderProgram;
 
             let gl = this.glContext;
@@ -514,9 +523,12 @@
             this.performance.numLights = 0;
             this.performance.batches = 0;
 
-            this.performance.numMeshChanges = 0;
-            this.performance.numMaterialChanges = 0;
-            this.performance.numShaderChanges = 0;
+            this.performance.bindShader = 0;
+            this.performance.bindMaterial = 0;
+            this.performance.bindMesh = 0;
+            this.performance.bindTexture = 0;
+            this.performance.bindLights = 0;
+            this.performance.bindTransform = 0;
         }
 
         /**
