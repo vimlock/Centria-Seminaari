@@ -143,7 +143,7 @@
             // If the data is not falsy, assume that the loading succeeded
             if (data) {
                 try {
-                    resource = type.parse(data);
+                    resource = type.parse(data, sourceUrl);
                     resource.name = name;
                     resource.sourceUrl = sourceUrl;
 
