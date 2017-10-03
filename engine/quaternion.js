@@ -173,8 +173,3 @@
     };
 
 })(this);
-
-
-var qu = new Quaternion(0.7071, 0.7071, 0.0, 0.0);
-console.log(qu);
-console.log(Quaternion.fromMat4(qu.toMat4()));
