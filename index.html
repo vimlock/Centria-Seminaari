@@ -518,6 +518,9 @@ function sceneTest() {
     engine.renderer.performance.fps = 0.0;
     engine.input = initInput();
 
+	engine.resources = new ResourceManager();
+    engine.resources.queueForLoading(Mesh, "engine/resources/ball.obj");
+
     let scene = new Scene();
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
 
@@ -536,20 +539,13 @@ function sceneTest() {
     material.defines = new Map([
         // ["VERTEX_COLORS", null],
         ["NORMALS", null],
-        ["LIGHTS", null],
-        ["INSTANCING", null],
+        ["LIGHTS", null]
     ]);
 	
-	
-	
-	
-	new ResourceManager().load(new VertexData(), "engine/resources/ball.obj", false);
-	
-    spawnCubes(scene, engine.resources.cache.ball.mesh, material, 10000);
-
-	
-	
-	
+    engine.resources.onAllLoaded(function() {
+        spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
+                material, 1000);
+    });
 	
     let cubeNode = scene.createChild("Cube");
     cubeNode.worldTransform = mat4.identity();

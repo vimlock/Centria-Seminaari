@@ -135,5 +135,57 @@
             }, 0);
         }
 
+        static parse(data, sourceUrl) {
+            return Mesh.fromOBJ(data, sourceUrl);
+        }
+
+        static fromOBJ(data, sourceUrl) {
+
+            /// Parse the mesh data
+            let vertices   = data.slice(data.indexOf('v '),  data.indexOf('vt '));
+            let textCoords = data.slice(data.indexOf('vt '), data.indexOf('vn '));
+            let normals    = data.slice(data.indexOf('vn '), data.indexOf('f '));
+            let indices    = data.slice(data.indexOf('f '),  data.length);
+            
+            vertices   = vertices.match(/-?\d\.\d*/g).map(parseFloat);
+            textCoords = textCoords.match(/\d\.\d*/g).map(parseFloat);
+            normals    = normals.match(/-?\d\.\d*/g).map(parseFloat);
+            indices    = indices.match(/\d+/g).map(function(num) { return parseInt(num, 10) - 1 });
+            
+            
+            /** HOX: Temporarily fill textCoords with color */
+            /** Remove the next 4 lines to use texture coordinates normally */
+            let len = textCoords.length / 2;
+            textCoords.length = 0;
+            while(len--)
+                textCoords.push(...[ 0.0, 1.0, 0.0 ]);
+            
+            
+            let v = [], c = [], n = [], ind = [];
+            let ilen = indices.length;
+            let count = 0;
+
+            while(count < ilen) {
+                ind.push(count / 3);
+                v.push(vertices[indices[count] * 3 + 0],
+                       vertices[indices[count] * 3 + 1],
+                       vertices[indices[count] * 3 + 2]);
+                count++;
+                c.push(textCoords[indices[count] * 3 + 0],
+                       textCoords[indices[count] * 3 + 1],
+                       textCoords[indices[count] * 3 + 2]);
+                count++;
+                n.push(normals[indices[count] * 3 + 0],
+                       normals[indices[count] * 3 + 1],
+                       normals[indices[count] * 3 + 2]);
+                count++;
+            }
+            
+            return buildTestMesh(v, c, n, ind);
+        }
+
+        static fromJSON(data, sourceUrl) {
+        }
+
     };
 })(this);
