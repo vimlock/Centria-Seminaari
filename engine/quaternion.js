@@ -66,9 +66,9 @@
         
         static fromMat4(m) {
 			// Takes rotation from 4x4 matrix
-			let m11 = m[0], m12 = m[4], m13 = m[8];
-			let m21 = m[1], m22 = m[5], m23 = m[9];
-			let m31 = m[2], m32 = m[6], m33 = m[10];
+			let m11 = m[0], m12 = m[1], m13 = m[2];
+			let m21 = m[4], m22 = m[5], m23 = m[6];
+			let m31 = m[8], m32 = m[9], m33 = m[10];
 			let trace = m11 + m22 + m33;
 			let s;
             
@@ -173,3 +173,8 @@
     };
 
 })(this);
+
+
+var qu = new Quaternion(0.7071, 0.7071, 0.0, 0.0);
+console.log(qu);
+console.log(Quaternion.fromMat4(qu.toMat4()));
