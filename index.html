@@ -27,6 +27,7 @@
 
 		<script src="engine/resource.js"></script>
 		<script src="engine/mesh.js"></script>
+		<script src="engine/file.js"></script>
 		<script src="engine/geometry.js"></script>
 
 		<script src="engine/utility.js"></script>
@@ -524,6 +525,7 @@ function sceneTest() {
 
 	engine.resources = new ResourceManager();
     engine.resources.queueForLoading(Mesh, "engine/resources/ball.obj");
+    engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
     let scene = new Scene();
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
@@ -549,8 +551,11 @@ function sceneTest() {
     ]);
 	
     engine.resources.onAllLoaded(function() {
+
+        console.log(engine.resources.getCached(JSONFile, "data/scenes/testScene.json"));
+
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
-                material, 1000);
+                material, 10);
     });
 	
     let cubeNode = scene.createChild("Cube");
