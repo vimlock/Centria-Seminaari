@@ -40,6 +40,17 @@
         }
 
         /**
+         * Remove a resource from the cache.
+         *
+         * Note that this function has no effect if the resource is currently being loaded.
+         *
+         * @param name {string} Id of the resource.
+         */
+        removeCached(name) {
+            this.cache.delete(name);
+        }
+
+        /**
          * Mark the resource for loading.
          *
          * This function does not return anything so you should subscribe
