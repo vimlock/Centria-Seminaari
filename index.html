@@ -380,6 +380,7 @@ function displayStatics(performance) {
 
     let html = 
         "<p>FPS: " + parseInt(performance.fps) + "</p>" +
+        "<p>Scene Nodes: " + performance.objects + "</p>" +
         "<p>Vertices: " + performance.vertices + "</p>" +
         "<p>Draw Calls: " + performance.numDrawCalls + "</p>" +
         "<p>Lights: " +     performance.numLights + "</p>" +
@@ -406,7 +407,7 @@ function spawnCubes(scene, mesh, material, num)
         let scale = (0.75 + random(0.7)) * 5.0;
 
         cubeNode.worldPosition = [ random(50.0), random(50.0), random(50.0) ];
-        // cubeNode.localScale = [ scale, scale, scale ];
+        cubeNode.localScale = [ scale, scale, scale ];
 
         cubeNode.localRotation = Quaternion.fromEulers(
             random(360.0), random(360.0), random(360.0)
@@ -632,7 +633,8 @@ function sceneTest() {
         engine.renderer.renderScene(scene, camera);
 
         engine.renderer.performance.fps = engine.renderer.performance.fps * 0.99 + fps * 0.01;
-        //engine.renderer.performance.fps = fps;
+        engine.renderer.performance.objects = scene.nodes.size;
+
         displayStatics(engine.renderer.performance);
 
         prevFrameTime = currentFrameTime;
