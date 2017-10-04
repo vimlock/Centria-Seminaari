@@ -288,8 +288,6 @@ void main()
 
     #ifdef VERTEX_COLORS
         col.rgb *= vColor;
-    #else
-        col *= vec4(0.0, 1.0, 1.0, 1.0);
     #endif
 
     col.rgb = GetLighting(col).rgb;
@@ -604,14 +602,21 @@ function sceneTest() {
     lightNode.setParent(lightRotator);
 
     let light = lightNode.createComponent(Light);
-    light.color = new Color(0.4, 0.4, 1.0, 1.2);
+    light.color = new Color(0.1, 0.1, 1.0, 1.2);
 
     lightNode = scene.createChild("Light2");
     lightNode.localPosition = [-30, -30, 30];
     lightNode.setParent(lightRotator);
 
     light = lightNode.createComponent(Light);
-    light.color = new Color(0.5, 1.0, 0.5, 1.2);
+    light.color = new Color(0.1, 1.0, 0.1, 1.2);
+
+    lightNode = scene.createChild("Light3");
+    lightNode.localPosition = [30, -30, 30];
+    lightNode.setParent(lightRotator);
+
+    light = lightNode.createComponent(Light);
+    light.color = new Color(1.0, 0.1, 0.1, 1.2);
 
     let prevFrameTime = Date.now();
 
