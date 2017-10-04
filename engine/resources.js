@@ -29,6 +29,14 @@
          * requests a Texture with the sameUrl, an exception will be thrown.
          */
         getCached(type, sourceUrl) {
+            if (!type) {
+                throw new Error("No resource type given");
+            }
+
+            if (!sourceUrl) {
+                throw new Error("No resource name given");
+            }
+
             let tmp = this.cache.get(sourceUrl);
             if (!(tmp instanceof type)) {
                 throw new Error("Resource " + sourceUrl + " requested as " + type.name
@@ -102,9 +110,15 @@
         onAllLoaded(callback) {
             if (this.loading.size === 0) {
                 callback();
+                return;
             }
+            else {
+                this.onAllLoadedEvent.addListener(callback);
+            }
+        }
 
-            this.onAllLoadedEvent.addListener(callback);
+        addBuiltinResource(name, resource) {
+            this.cache.set(name, resource);
         }
 
         /**

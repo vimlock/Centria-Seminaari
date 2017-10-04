@@ -424,7 +424,10 @@ function spawnCubes(scene, mesh, material, num)
 
         let cube = cubeNode.createComponent(Model);
         cube.mesh = mesh;
+        cube.meshName = mesh.name;
+
         cube.material = material;
+        cube.materialName = "DefaultMaterial";
     }
 }
 
@@ -523,6 +526,20 @@ function sceneTest() {
     engine.renderer.performance.fps = 0.0;
     engine.input = initInput();
 
+    engine.componentTypes = {
+        "Camera": Camera,
+        "Light": Light,
+        "Model": Model,
+    };
+
+    engine.resourceTypes = {
+        "Texture": Texture,
+        "Material": Material,
+        "Mesh": Mesh,
+        "JSONFile": JSONFile,
+        "TextFile": TextFile,
+    };
+
 	engine.resources = new ResourceManager();
     engine.resources.queueForLoading(Mesh, "engine/resources/ball.obj");
     engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
@@ -549,10 +566,19 @@ function sceneTest() {
         ["NORMALS", null],
         ["LIGHTS", null]
     ]);
+
+    engine.resources.addBuiltinResource("DefaultMaterial", material);
+    engine.resources.addBuiltinResource("ColorCube", mesh);
 	
     engine.resources.onAllLoaded(function() {
+        let scene = new Scene();
 
-        console.log(engine.resources.getCached(JSONFile, "data/scenes/testScene.json"));
+        engine.sceneTest = scene;
+        scene.deserializeJSON(engine.resources.getCached(JSONFile, "data/scenes/testScene.json").contents,
+            function(scene) {
+                console.log(JSON.stringify(scene.serializeJSON(), null, 1));
+            }
+        );
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
                 material, 10);
@@ -563,7 +589,9 @@ function sceneTest() {
 
     let cube = cubeNode.createComponent(Model);
     cube.mesh = mesh;
+    cube.meshName = "ColorCube";
     cube.material = material;
+    cube.materialName = "DefaultMaterial";
 
     let camNode = scene.createChild("Camera");
 	camNode.worldTransform = mat4.translate(0, 0, -5.0);

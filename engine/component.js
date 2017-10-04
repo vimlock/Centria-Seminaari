@@ -8,17 +8,17 @@ class Component {
         this.id = 0;
     }
 
-    serializeJSON() {
+    serializeJSON(serializer) {
         let obj = {
             id: this.id,
             type: this.constructor.name,
-            properties: this._getSerializedProperties(),
+            properties: this._getSerializedProperties(serializer),
         };
 
         return obj;
     }
 
-    _getSerializedProperties() {
+    _getSerializedProperties(serializer) {
         if (!this.serialize) {
             return {};
         }
@@ -26,7 +26,7 @@ class Component {
         let typename = this.constructor.name;
 
         try {
-            return this.serialize();
+            return this.serialize(serializer);
         }
         catch(e) {
             console.log("Can't serialize " + typename);

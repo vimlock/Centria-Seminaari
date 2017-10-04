@@ -1,4 +1,6 @@
-/* exported Serialize */
+/* exported Serialize, Deserialize */
+
+/* global Color, Quaternion */
 
 "use strict";
 
@@ -45,5 +47,52 @@ class Serialize {
 
     static vec4(prop) {
         return prop.join(" ");
+    }
+}
+
+class Deserialize {
+
+    static color(src) {
+        return Color.fromArray(src.split(" "));
+    }
+
+    static component(src) {
+        return parseInt(src.split(":")[1]);
+    }
+
+    static sceneNode(src) {
+        return parseInt(src.split(":")[1]);
+    }
+
+    static sceneNodeArray(src) {
+        return src.substring(src.indexOf(":") + 1).split(";");
+    }
+
+    static resource(src) {
+        return parseInt(src.split(":")[1]);
+    }
+
+    static resourceArray(src) {
+        return src.substring(src.indexOf(":") + 1).split(";");
+    }
+
+    static quaternion(src) {
+        return Quaternion.fromArray(src.split(" "));
+    }
+    
+    static mat4(src) {
+        return src.split(" ");
+    }
+
+    static vec2(src) {
+        return src.split(" ");
+    }
+
+    static vec3(src) {
+        return src.split(" ");
+    }
+
+    static vec4(src) {
+        return src.split(" ");
     }
 }

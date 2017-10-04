@@ -377,7 +377,7 @@
         }
 
 
-        fromArray(a) {
+        static fromArray(a) {
             return new Color(a[0], a[1], a[2], a[3]);
         }
 

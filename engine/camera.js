@@ -1,4 +1,4 @@
-/* global Component, engine, mat4, Serialize */
+/* global Component, engine, mat4 */
 /* exported DegToRad, RadToDeg */
 
 "use strict";
@@ -73,6 +73,15 @@ const RadToDeg = 1.0 / DegToRad;
                 nearPlane: this.nearPlane,
                 farPlane: this.farPlane,
             };
+        }
+
+        deserialize(deserializer, src) {
+            this.orthographic = src.orthographic;
+            this.orthographicSize = src.orthographicSize;
+            this.aspectRatio = src.aspectRatio;
+            this.fieldOfView = src.fieldOfView;
+            this.nearPlane = src.nearPlane;
+            this.farPlane = src.farPlane;
         }
     };
 

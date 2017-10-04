@@ -1,4 +1,4 @@
-/* global Component, Color, Serialize */
+/* global Component, Color, Serialize, Deserialize */
 
 "use strict";
 
@@ -43,6 +43,15 @@
                 diffuseEnabled: this.diffuseEnabled,
                 specularEnabled: this.specularEnabled,
             };
+        }
+
+        deserialize(deserializer, src) {
+            this.color = Deserialize.color(src.color);
+            this.range = src.range;
+            this.intensity = src.intensity;
+            this.fallof = src.fallof;
+            this.diffuseEnabled = src.diffuseEnabled;
+            this.specularEnabled = src.specularEnabled;
         }
     };
 
