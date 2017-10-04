@@ -174,7 +174,7 @@ void main()
         vWorldPos = (uModelMatrix * vec4(iPosition, 1.0)).xyz;
 
         #ifdef NORMALS
-            vNormal = normalize((mat3(uModelViewMatrix) * iNormal));
+            vNormal = normalize((mat3(uModelViewMatrix)) * iNormal);
         #endif
     #endif
 
@@ -406,7 +406,7 @@ function spawnCubes(scene, mesh, material, num)
         let scale = (0.75 + random(0.7)) * 5.0;
 
         cubeNode.worldPosition = [ random(50.0), random(50.0), random(50.0) ];
-        cubeNode.localScale = [ scale, scale, scale ];
+        // cubeNode.localScale = [ scale, scale, scale ];
 
         cubeNode.localRotation = Quaternion.fromEulers(
             random(360.0), random(360.0), random(360.0)
@@ -573,7 +573,11 @@ function sceneTest() {
     */
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
-                material, 100);
+                material, 1000);
+
+        /*
+        spawnCubes(scene, engine.resources.getCached(Mesh, "ColorCube"), material, 1000);
+        */
 
     });
 	

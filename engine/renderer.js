@@ -469,12 +469,18 @@
 
             gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
 
-            mesh.attributes.forEach(function(attrib, index) {
-                gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false,
-                    mesh.vertexSize,
-                    4 * attrib.offset
-                );
-                gl.enableVertexAttribArray(index);
+            let attribOffsets = this.activeShader.attribLocations;
+
+            mesh.attributes.forEach(function(attrib) {
+                let index = attribOffsets[attrib.name];
+
+                if (!(index === undefined || index < 0)) {
+                    gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false,
+                        mesh.vertexSize,
+                        4 * attrib.offset
+                    );
+                    gl.enableVertexAttribArray(index);
+                }
             });
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
@@ -686,11 +692,11 @@
                     }
                 });
             });
+            */
 
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);
             });
-            */
 
             return prog;
         }

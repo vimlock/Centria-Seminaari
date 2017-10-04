@@ -183,6 +183,8 @@
                        normals[indices[count] * 3 + 2]);
                 count++;
             }
+
+            console.log(n);
             
             return buildTestMesh(v, c, n, ind);
         }
