@@ -597,17 +597,25 @@ function sceneTest() {
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
 
+    let lightRotator = scene.createChild("LightRotator");
+
     let lightNode = scene.createChild("Light");
-    lightNode.worldTransform = mat4.translate(30, 30, -30);
+    lightNode.localPosition = [30, 30, -30];
+    lightNode.setParent(lightRotator);
+
     let light = lightNode.createComponent(Light);
     light.color = new Color(0.4, 0.4, 1.0, 1.2);
 
     lightNode = scene.createChild("Light2");
-    lightNode.worldTransform = mat4.translate(-30, -30, 30);
+    lightNode.localPosition = [-30, -30, 30];
+    lightNode.setParent(lightRotator);
+
     light = lightNode.createComponent(Light);
     light.color = new Color(0.5, 1.0, 0.5, 1.2);
 
     let prevFrameTime = Date.now();
+
+    console.log(scene);
 
     requestAnimationFrame(function update() {
         let currentFrameTime = Date.now();
@@ -622,10 +630,17 @@ function sceneTest() {
             mat4.rotateX(Date.now() * 0.00001)
         );
 
+        lightRotator.localRotation = Quaternion.fromEulers(
+                Date.now() * 0.0005, Date.now() * 0.0005, Date.now() * 0.0005
+        );
+        lightRotator.worldTransformDirty = true;
+
         cubeNode.worldTransform = mat4.translate(0.0, 0, 0),
 
         scene.updateHierarchy(false);
         scene.update();
+
+        // console.log("light 1 at " + lightNode.worldPosition);
 
         updateCamera(camNode, timeDelta);
 

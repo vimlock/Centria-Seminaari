@@ -55,7 +55,7 @@
             }
 
             for (let child of this.children) {
-                child.updateHierarchy(force);
+                child.updateHierarchy(dirty);
             }
         }
 
@@ -70,14 +70,16 @@
                 this._updateWorldTransform();
             }
             
-            return this.worldTransformDirty;
+            return this.worldTransform;
         }
 
         _updateWorldTransform() {
             this.worldTransformDirty = false;
 
+            // console.log(this.name + " update world transform");
+
             if (this.parent && this.parent !== this.scene) {
-                this.worldTransform = mat4.multiply(parent.transform, this.localTransform);
+                this.worldTransform = mat4.multiply(this.parent.transform, this.localTransform);
             }
             else {
                 this.worldTransform = this.localTransform;
@@ -113,7 +115,7 @@
         }
 
         get worldPosition() {
-            return mat4.getTranslation(this.worldTransform);
+            return mat4.getTranslation(this.transform);
         }
 
         set worldPosition(value) {
@@ -183,30 +185,39 @@
             return child;
         }
 
-        removeChild(_child) {
-            // TODO
+        removeChild(child) {
+            this.removeChildAt(this.children.indexOf(child));
         }
 
-        removeChildAt(_n) {
-            // TODO
+        removeChildAt(n) {
+            if (n < 0) {
+                return;
+            }
+
+            this.children.splice(n, 1);
         }
 
         setParent(parent, keepTransform=true) {
+            if (!(parent instanceof SceneNode)) { throw Error("Invalid parent type"); }
+
+            if (this.parent) {
+                this.parent.removeChild(this);
+            }
+
             if (!parent) {
                 parent = this.scene;
             }
 
-            this.parent = parent;
-
             // TODO: Check if the scene is different, and either reject the change
             // or register the node to new scene
 
-            if (!keepTransform)
-                this.worldTransformDirty = true;
-
+            this.parent = parent;
             if (parent) {
                 parent.children.push(this);
             }
+
+            if (!keepTransform || keepTransform)
+                this.worldTransformDirty = true;
         }
 
         /**

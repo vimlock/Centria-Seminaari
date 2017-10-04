@@ -106,7 +106,7 @@
                 // Pick the lights
                 let light = node.getComponent(Light);
                 if (light) {
-                    renderer._queueLight(lights, light, node.worldTransform);
+                    renderer._queueLight(lights, light, node.transform);
                 }
 
                 // Pick the models
@@ -398,8 +398,9 @@
             for (let i = 0; i < MAX_LIGHTS; ++i) {
                 if (i < lights.length) {
                     let light = lights[i].light;
+                    let t = lights[i].transform;
 
-                    gl.uniform3fv(uniforms[i].position, light.node.worldPosition);
+                    gl.uniform3fv(uniforms[i].position, mat4.getTranslation(t));
                     gl.uniform4fv(uniforms[i].color, light.color.toArray());
                     gl.uniform1f(uniforms[i].range, light.range);
                 }
