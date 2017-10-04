@@ -50,9 +50,8 @@
         updateHierarchy(force=false) {
             let dirty = force || this.worldTransformDirty;
 
-            if (dirty && parent) {
-                this.worldTransform = mat4.multiply(parent.worldTransform, this.localTransform);
-                this.worldTransformDirty = false;
+            if (dirty) {
+                this._updateWorldTransform();
             }
 
             for (let child of this.children) {
@@ -66,11 +65,96 @@
             }
         }
 
+        get transform() {
+            if (this.worldTransformDirty) {
+                this._updateWorldTransform();
+            }
+            
+            return this.worldTransformDirty;
+        }
+
+        _updateWorldTransform() {
+            this.worldTransformDirty = false;
+
+            if (this.parent && this.parent !== this.scene) {
+                this.worldTransform = mat4.multiply(parent.transform, this.localTransform);
+            }
+            else {
+                this.worldTransform = this.localTransform;
+            }
+        }
+
         get localTransform() {
+            let p = this.localPosition;
+            let s = this.localScale;
+
+            // Rotate
+            let t = this.localRotation.toMat4();
+
+            // Scale
+            t[0] *= s[0];
+            t[1] *= s[1];
+            t[2] *= s[2];
+
+            t[4] *= s[0];
+            t[5] *= s[1];
+            t[6] *= s[2];
+
+            t[8] *= s[0];
+            t[9] *= s[1];
+            t[10] *= s[2];
+
+            // Translate
+            t[12] = p[0];
+            t[13] = p[1];
+            t[14] = p[2];
+
+            return t;
         }
 
         get worldPosition() {
             return mat4.getTranslation(this.worldTransform);
+        }
+
+        set worldPosition(value) {
+            this.worldTransformDirty = true;
+
+            // Do we have a parent?
+            if (this.parent && this.parent !== this.scene) {
+                let t = this.parent.transform;
+                this.localPosition = vec3.subtract(mat4.getTranslation(t), value);
+            }
+            else {
+                this.localPosition = value;
+            }
+        }
+
+        get worldScale() {
+            // TODO
+            return [1, 1, 1];
+        }
+
+        set worldScale(_value) {
+            // TODO
+        }
+
+        get worldRotaton() {
+            return Quaternion.fromMat4(this.transform);
+        }
+
+        set worldRotation(rotation) {
+            this.worldTransformDirty = true;
+
+            // Do we have a parent?
+            if (this.parent && this.parent !== this.scene) {
+                let tmp = mat4.multiply(mat4.invert(this.parent.transform, rotation.toMat4()));
+                this.localRotation = Quaternion.fromMat4(tmp);
+                this.localRotation.normalize();
+
+            }
+            else {
+                this.localRotation = rotation;
+            }
         }
 
         get forward() {

@@ -403,24 +403,14 @@ function spawnCubes(scene, mesh, material, num)
     for (let i = 0; i < num; ++i) {
         let cubeNode = scene.createChild("Cube");
 
-        let scale = 0.75 + random(0.7);
+        let scale = (0.75 + random(0.7)) * 5.0;
 
-        cubeNode.worldTransform = mat4.multiply(
-            mat4.translate(random(50.0), random(50.0), random(50.0)),
-            mat4.scale(scale, scale, scale) 
-        );
+        cubeNode.worldPosition = [ random(50.0), random(50.0), random(50.0) ];
+        cubeNode.localScale = [ scale, scale, scale ];
 
-        /*
-        cubeNode.worldTransform = mat4.multiply(
-                cubeNode.worldTransform,
-                mat4.rotateX(random(360.0))
+        cubeNode.localRotation = Quaternion.fromEulers(
+            random(360.0), random(360.0), random(360.0)
         );
-
-        cubeNode.worldTransform = mat4.multiply(
-                cubeNode.worldTransform,
-                mat4.rotateY(random(360.0))
-        );
-        */
 
         let cube = cubeNode.createComponent(Model);
         cube.mesh = mesh;
@@ -571,6 +561,7 @@ function sceneTest() {
     engine.resources.addBuiltinResource("ColorCube", mesh);
 	
     engine.resources.onAllLoaded(function() {
+    /*
         let scene = new Scene();
 
         engine.sceneTest = scene;
@@ -579,9 +570,11 @@ function sceneTest() {
                 console.log(JSON.stringify(scene.serializeJSON(), null, 1));
             }
         );
+    */
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
-                material, 10);
+                material, 100);
+
     });
 	
     let cubeNode = scene.createChild("Cube");
@@ -626,7 +619,7 @@ function sceneTest() {
 
         cubeNode.worldTransform = mat4.translate(0.0, 0, 0),
 
-        // scene.updateHierarchy(false);
+        scene.updateHierarchy(false);
         scene.update();
 
         updateCamera(camNode, timeDelta);
