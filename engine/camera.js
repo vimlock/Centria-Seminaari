@@ -5,9 +5,11 @@ const RadToDeg = 1.0 / DegToRad;
 
 (function(context) {
 
-    context.Camera = class {
+    context.Camera = class extends Component{
 
         constructor() {
+            super();
+
             /// If false, the camera will use perspective projection
             this.orthographic = false;
 

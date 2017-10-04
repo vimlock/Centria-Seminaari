@@ -4,9 +4,11 @@
     /**
      * Model component.
      */
-    context.Model = class Model {
+    context.Model = class Model extends Component {
 
         constructor()  {
+            super();
+
             /// Mesh to use for rendering.
             this.mesh = null;
 
