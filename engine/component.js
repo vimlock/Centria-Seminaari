@@ -1,3 +1,5 @@
+/* exported Component */
+
 "use strict";
 
 class Component {

@@ -1,3 +1,6 @@
+/* global Component, engine, mat4 */
+/* exported DegToRad, RadToDeg */
+
 "use strict";
 
 const DegToRad = (Math.PI / 180.0);

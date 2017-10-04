@@ -1,3 +1,4 @@
+/* global Component */
 "use strict";
 
 (function (context) {

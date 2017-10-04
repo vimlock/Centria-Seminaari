@@ -1,3 +1,4 @@
+/* global engine, Geometry, buildTestMesh */
 "use strict";
 
 (function(context) {

@@ -1,3 +1,5 @@
+/* global Component, Color */
+
 "use strict";
 
 (function(context) {

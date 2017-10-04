@@ -1,9 +1,9 @@
+/* global buildShaderKey, Camera, Color, Light, Material, Model, ShaderProgram, mat4, vec3 */
 "use strict";
 
 (function(context) {
 
     const MAX_LIGHTS = 4;
-    const MAX_TEXTURES = 8;
 
     /// If batch size does not exceed this limit, non-instanced draw calls will be used.
     /// This is because instancing has some overhead to it.

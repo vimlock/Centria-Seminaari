@@ -1,3 +1,4 @@
+/* global Color */
 "use strict";
 
 (function(context) {
