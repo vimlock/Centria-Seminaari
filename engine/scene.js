@@ -1,3 +1,5 @@
+/* global Color, vec3, mat4, Quaternion, Serialize */
+
 "use strict";
 
 (function(context) {
@@ -119,7 +121,25 @@
             }
         }
 
+        /**
+         * Converts the SceneNode into a JSON representation from which it
+         * can be saved to a file
+         *
+         * @returns JSON object
+         */
         serializeJSON() {
+            return {
+                id: this.id,
+                name: this.name,
+                enabled: this.enabled,
+
+                localPosition: Serialize.vec3(this.localPosition),
+                localRotation: Serialize.quaternion(this.localRotation),
+                localScale: Serialize.vec3(this.localScale),
+
+                children: this.children.map(child => child.id),
+                components: this.components.map(comp => comp.serializeJSON()),
+            };
         }
 
         deserializeJSON(src) {
@@ -244,6 +264,32 @@
 
             /// Used to generate unique component ids.
             this.nextNodeId = 1;
+        }
+
+        /**
+         * Converts the Scene into a JSON representation from which it
+         * can be saved to a file.
+         *
+         * This method overrides SceneNode.serializeJson because Scene objects
+         * have special properties which also need to be serialized.
+         */
+        serializeJSON() {
+
+            let nodes = [];
+
+            for (let child of this.children) {
+                child.walkAll(function (node) {
+                    nodes.push(node.serializeJSON());
+                });
+            }
+
+            return {
+                background: Serialize.color(this.background),
+                ambientColor: Serialize.color(this.ambientColor),
+                nextComponentId: this.nextComponentId,
+                nextNodeId: this.nextNodeId,
+                nodes: nodes,
+            };
         }
 
         /**

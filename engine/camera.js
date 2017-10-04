@@ -1,4 +1,4 @@
-/* global Component, engine, mat4 */
+/* global Component, engine, mat4, Serialize */
 /* exported DegToRad, RadToDeg */
 
 "use strict";
@@ -8,7 +8,7 @@ const RadToDeg = 1.0 / DegToRad;
 
 (function(context) {
 
-    context.Camera = class extends Component{
+    context.Camera = class Camera extends Component{
 
         constructor() {
             super();
@@ -62,6 +62,17 @@ const RadToDeg = 1.0 / DegToRad;
          */
         get viewDirection() {
             return this.node.worldTransform.forward;
+        }
+
+        serialize() {
+            return {
+                orhographic: this.orthographic,
+                orthographicSize: this.orthographicSize,
+                aspectRatio: this.aspectRatio,
+                fieldOfView: this.fieldOfView,
+                nearPlane: this.nearPlane,
+                farPlane: this.farPlane,
+            };
         }
     };
 

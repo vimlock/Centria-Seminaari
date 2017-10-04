@@ -18,11 +18,14 @@
 		<script src="engine/core.js"></script>
 
         <!-- Core components -->
+		<script src="engine/serialize.js"></script>
 		<script src="engine/component.js"></script>
+
 		<script src="engine/camera.js"></script>
 		<script src="engine/light.js"></script>
 		<script src="engine/model.js"></script>
 
+		<script src="engine/resource.js"></script>
 		<script src="engine/mesh.js"></script>
 		<script src="engine/geometry.js"></script>
 
@@ -524,6 +527,8 @@ function sceneTest() {
 
     let scene = new Scene();
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
+
+    engine.scene = scene;
 
     let mesh = buildTestMesh(
         engine.models.cube.vertices,

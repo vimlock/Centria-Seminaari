@@ -1,4 +1,4 @@
-/* global Component, Color */
+/* global Component, Color, Serialize */
 
 "use strict";
 
@@ -7,7 +7,7 @@
     /**
      * Light component.
      */
-    context.Light = class extends Component {
+    context.Light = class Light extends Component {
 
         constructor() {
             super();
@@ -32,6 +32,17 @@
 
             /// Should this light contribute to the specular color?
             this.specularEnabled = true;
+        }
+
+        serialize() {
+            return {
+                color: Serialize.color(this.color),
+                range: this.range,
+                intensity: this.intensity,
+                fallof: this.falloff,
+                diffuseEnabled: this.diffuseEnabled,
+                specularEnabled: this.specularEnabled,
+            };
         }
     };
 

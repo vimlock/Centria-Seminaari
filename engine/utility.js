@@ -388,12 +388,12 @@
 
 
         toHex() {
-            return [ this.r * 255, this.g * 255, this.b * 255, this.a * 255 ];
+            return [ this.r * 255, this.g * 255, this.b * 255, this.a * 255 ].map(Math.round);
         }
 
 
         toHexString() {
-            return "#" +this.toHex().map(decToHexPadded).join("");
+            return "#" + this.toHex().map(decToHexPadded).join("");
         }
 
         static get black()   { return new Color(0.0, 0.0, 0.0, 1.0); }
@@ -407,16 +407,16 @@
         static get magenta() { return new Color(1.0, 0.0, 1.0, 1.0); }
 
 
-    }
+    };
 
 
 
 
 
-this.decToHexPadded = function(dec) {
-let tmp = dec.toString(16);
-return tmp.length < 2 ? '0' + tmp : tmp;
-}
+    this.decToHexPadded = function(dec) {
+        let tmp = dec.toString(16);
+        return tmp.length < 2 ? "0" + tmp : tmp;
+    };
 	
 	
 })(this);

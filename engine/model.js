@@ -1,4 +1,4 @@
-/* global Component */
+/* global Component, Mesh, Serialize */
 "use strict";
 
 (function (context) {
@@ -50,5 +50,18 @@
                 return null;
             }
         }
+
+        serialize() {
+            return {
+                mesh: Serialize.resource(this.mesh),
+                materials: Serialize.resourceArray(this.materials),
+            };
+        }
+
+        deserialize(s) {
+            this.mesh = s.resource(Mesh);
+            this.materials =  s.resourceArray(Mesh);
+        }
     };
+
 })(this);

@@ -1,4 +1,4 @@
-/* global engine, Geometry, buildTestMesh */
+/* global engine, Geometry, Resource, buildTestMesh */
 "use strict";
 
 (function(context) {
@@ -33,8 +33,10 @@
     /**
      * Collection of vertices and indices uploaded to the GPU.
      */
-    context.Mesh = class Mesh {
+    context.Mesh = class Mesh extends Resource {
         constructor() {
+            super();
+
             this.indexBuffer = null;
             this.vertexBuffer = null;
 
