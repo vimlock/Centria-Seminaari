@@ -77,8 +77,7 @@
             // Allow the type to handle the loading, if it wants to.
             if (type.loadOverride) {
                 type.loadOverride(sourceUrl, loadCompleteHandler);
-            }
-            else {
+            } else {
                 this._loadAsync(sourceUrl, loadCompleteHandler);
             }
         }
@@ -166,37 +165,78 @@
         }
     };
     
-    // Example class
+    
     context.Texture = class Texture {
         constructor(imgSrc, glTexture) {
             this.imgSrc = imgSrc;
             this.glTexture  = glTexture;
         }
 
-        static loadOverride(sourceUrl) {
+
+        static loadOverride(sourceUrl, callback) {
             // TODO
+            console.log("asd");
+            let image = new Image();
+            //image.crossOrigin = "anonymous";
+            image.onload = function() {
+                console.log("asde");
+                callback(image);
+            }
+            console.log(sourceUrl);
+            image.src = sourceUrl;
         }
         
-        static parse(data) {
+        
+        static parse(data, sourceUrl) {
             /// Create an URL for the image stored in RAM
             /// The URL is given for an image object as a source
-            let imgSrc = window.URL.createObjectURL(data);
-            let glTexture = Texture._uploadToGPU(imgSrc);
+            let imgSrc = sourceUrl;
+            let glTexture = Texture._uploadToGPU(data);
 
             return new Texture(imgSrc, glTexture);
         }
-
-        static _uploadToGpu(img) {
+        
+        
+        static makeTexture(format, width, height, color) {
+            // TODO
+            /// Creates a texture manually. In most cases used if no texture is available
+            /// Format: RGBA / RGBA
+            /// Width and height: texture dimensions
+            /// Color: Color.white.toArray()
+        }
+        
+        
+        static _uploadToGPU(img) {
+            console.log(img);
             // TODO: And here's where the magic happens.
-            return null;
+            let gl = engine.gl;
+            
+            let texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            
+            /// If power of 2 width and height, generate mipmap
+            if(img.width && img.height && !(img.width & (img.width - 1)) && !(img.height & (img.height - 1)))
+                gl.generateMipmap(gl.TEXTURE_2D);
+            else {
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            }
+            /// Unbind texture so no accidents happen
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            
+            return texture;
         }
 
     };
+
 
     context.CubeMap = class CubeMap {
         constructor() {
             this.glTexture = null;
         }
     };
-    
+
+
 })(this);
