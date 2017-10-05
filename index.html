@@ -610,8 +610,6 @@ function sceneTest() {
         scene.update();
         updateCamera(camNode, timeDelta);
 
-        scene.updateHierarchy();
-
         engine.renderer.resetPerformance();
         engine.renderer.renderScene(scene, camera);
 

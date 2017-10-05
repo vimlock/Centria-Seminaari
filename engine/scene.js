@@ -65,6 +65,21 @@
             }
         }
 
+        _markWorldTransformDirty() {
+            // If this scene node is dirty, we can assume the children are dirty
+            // as well and skip them.
+            if (this._worldTransformDirty)
+                return;
+
+            this._worldTransformDirty = true;
+
+            // Go down the transform hiararchy and mark children as dirty
+            for (let child of this.children) {
+                child._markWorldTransformDirty();
+            }
+
+        }
+
         _updateWorldTransform() {
             this._worldTransformDirty = false;
 
@@ -117,7 +132,7 @@
         }
 
         set localPosition(value) {
-            this._worldTransformDirty = true;
+            this._markWorldTransformDirty();
             this._localPosition = value;
 
         }
@@ -127,7 +142,7 @@
         }
 
         set localRotation(value) {
-            this._worldTransformDirty = true;
+            this._markWorldTransformDirty();
             this._localRotation = value;
         }
 
@@ -136,7 +151,7 @@
         }
 
         set localScale(value) {
-            this._worldTransformDirty = true;
+            this._markWorldTransformDirty();
             this._localScale = value;
         }
 
@@ -145,7 +160,7 @@
         }
 
         set worldPosition(value) {
-            this._worldTransformDirty = true;
+            this._markWorldTransformDirty();
 
             // Do we have a parent?
             if (this.parent && this.parent !== this.scene) {
@@ -162,11 +177,11 @@
         }
 
         set worldRotation(rotation) {
-            this._worldTransformDirty = true;
+            this._markWorldTransformDirty();
 
             // Do we have a parent?
             if (this.parent && this.parent !== this.scene) {
-                let tmp = mat4.multiply(mat4.invert(this.parent.transform, rotation.toMat4()));
+                let tmp = mat4.multiply(mat4.invert(this.parent.worldTransform, rotation.toMat4()));
                 this._localRotation = Quaternion.fromMat4(tmp);
                 this._localRotation.normalize();
 
@@ -182,7 +197,7 @@
         }
 
         set worldScale(_value) {
-            this._worldTransformDirty = true;
+            this._markWorldTransformDirty();
             // TODO
         }
 
@@ -244,7 +259,7 @@
             }
 
             if (!keepTransform || keepTransform)
-                this._worldTransformDirty = true;
+                this._markWorldTransformDirty();
         }
 
         translateLocal(offset) {
