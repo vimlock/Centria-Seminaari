@@ -120,7 +120,7 @@ void main() {
     #endif
 
     #if defined(DIFFUSEMAP) || defined(NORMALMAP)
-        in vec2 vTexCoord;
+        in vec2 iTexCoord;
     #endif
 
     #ifdef NORMALMAP
@@ -131,6 +131,10 @@ void main() {
         in mat4 iInstanceModelMatrix;
     #endif
 
+#endif
+
+#if __VERSION__ >= 130
+    #define texture2D texture
 #endif
 
 #ifdef VERTEX_COLORS
@@ -201,13 +205,13 @@ struct Light {
 };
 
 
-uniform sampler2D sDiffuse;
-uniform sampler2D sSpecular;
-uniform sampler2D sAmbient;
+uniform sampler2D sDiffuseMap;
+uniform sampler2D sSpecularMap;
+uniform sampler2D sAmbientMap;
 uniform sampler2D sNormalMap;
 uniform sampler2D sHeightMap;
-uniform sampler2D sEmission;
-uniform sampler2D sEnvironment;
+uniform sampler2D sEmissionMap;
+uniform sampler2D sEnvironmentMap;
 
 uniform vec4 uDiffuseColor;
 uniform vec4 uSpecularColor;
@@ -237,10 +241,10 @@ vec4 GetLighting(vec4 diffColor)
         float diffFactor = max(dot(normal, surfaceToLight), 0.0);
         float specFactor = 0.0;
         if (diffFactor > 0.0)
-            specFactor = pow(max(dot(normal, halfVector), 0.0), 300.0);
+            specFactor = pow(max(dot(normal, halfVector), 0.0), 10.0);
 
-        float atten = clamp(1.0 - uLights[i].range / length(surfaceToLightDelta), 0.0, 1.0);
-        atten = 1.0 - pow(atten, 2.0);
+        float atten = clamp(1.0 - uLights[i].range * 2.0 / length(surfaceToLightDelta), 0.0, 1.0);
+        atten = pow(1.0 - atten, 2.0);
 
         lighting.rgb += (diffColor.rgb * uLights[i].color.rgb * diffFactor +
                         uSpecularColor.rgb * specFactor * atten) * uLights[i].color.a * atten;
@@ -281,7 +285,7 @@ void main()
     vec4 col;
 
     #ifdef DIFFUSEMAP
-        col = texture2D(sDiffuse, vTexCoord);
+        col = texture2D(sDiffuseMap, vTexCoord);
     #else
         col = vec4(1.0, 1.0, 1.0, 1.0);
     #endif
@@ -498,15 +502,7 @@ function updateCamera(camNode, timeDelta) {
 
     d = vec3.add(d, vec3.scale(camNode.up, dy));
 
-    let position = vec3.add(camNode.worldPosition, d);
-
-    camNode.worldTransform[12] = 0.0;
-    camNode.worldTransform[13] = 0.0;
-    camNode.worldTransform[14] = 0.0;
-
-    camNode.worldTransform = mat4.multiply(
-        camNode.worldTransform, mat4.translate(position[0], position[1], position[2])
-    );
+    camNode.translateLocal(d);
 
 }
 
@@ -530,7 +526,8 @@ function sceneTest() {
     };
 
 	engine.resources = new ResourceManager();
-    engine.resources.queueForLoading(Mesh, "engine/resources/ball.obj");
+    engine.resources.queueForLoading(Mesh, "engine/resources/monkey.obj");
+    engine.resources.queueForLoading(Texture, "engine/resources/MonkeyPink.png");
     engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
     let scene = new Scene();
@@ -545,10 +542,12 @@ function sceneTest() {
         engine.models.cube.indices
     );
 
+    let shader = new ShaderSource("TestShader",
+        document.getElementById("test-shader").innerHTML);
+
     let material = new Material();
 
-    material.shader = new ShaderSource("TestShader",
-        document.getElementById("test-shader").innerHTML);
+    material.shader = shader;
 
     material.defines = new Map([
         // ["VERTEX_COLORS", null],
@@ -560,28 +559,26 @@ function sceneTest() {
     engine.resources.addBuiltinResource("ColorCube", mesh);
 	
     engine.resources.onAllLoaded(function() {
-    /*
-        let scene = new Scene();
 
-        engine.sceneTest = scene;
-        scene.deserializeJSON(engine.resources.getCached(JSONFile, "data/scenes/testScene.json").contents,
-            function(scene) {
-                console.log(JSON.stringify(scene.serializeJSON(), null, 1));
-            }
-        );
-    */
+        let t = engine.resources.getCached(Texture, "engine/resources/MonkeyPink.png");
 
-        spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
-                material, 1000);
+        let m = new Material();
+        m.shader = shader;
+        m.defines = new Map([
+            ["DIFFUSEMAP", null],
+            ["NORMALS", null],
+            ["LIGHTS", null],
+        ]);
 
-        /*
-        spawnCubes(scene, engine.resources.getCached(Mesh, "ColorCube"), material, 1000);
-        */
+        m.textures = new Map([
+            ["diffuseMap", t]
+        ]);
 
+        spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
+            m, 100);
     });
 	
     let cubeNode = scene.createChild("Cube");
-    cubeNode.worldTransform = mat4.identity();
 
     let cube = cubeNode.createComponent(Model);
     cube.mesh = mesh;
@@ -590,7 +587,7 @@ function sceneTest() {
     cube.materialName = "DefaultMaterial";
 
     let camNode = scene.createChild("Camera");
-	camNode.worldTransform = mat4.translate(0, 0, -5.0);
+	camNode.translateLocal([0, 0, -5]);
 
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
@@ -620,8 +617,6 @@ function sceneTest() {
 
     let prevFrameTime = Date.now();
 
-    console.log(scene);
-
     requestAnimationFrame(function update() {
         let currentFrameTime = Date.now();
         let timeDelta = currentFrameTime - prevFrameTime;
@@ -630,23 +625,11 @@ function sceneTest() {
 
         requestAnimationFrame(update);
 
-        cubeNode.worldTransform = mat4.multiply(
-            mat4.rotateY(Date.now() * 0.00001),
-            mat4.rotateX(Date.now() * 0.00001)
-        );
-
         lightRotator.localRotation = Quaternion.fromEulers(
                 Date.now() * 0.0005, Date.now() * 0.0005, Date.now() * 0.0005
         );
-        lightRotator.worldTransformDirty = true;
 
-        cubeNode.worldTransform = mat4.translate(0.0, 0, 0),
-
-        scene.updateHierarchy(false);
         scene.update();
-
-        // console.log("light 1 at " + lightNode.worldPosition);
-
         updateCamera(camNode, timeDelta);
 
         engine.renderer.resetPerformance();
