@@ -20,12 +20,12 @@
     context.SceneNode = class SceneNode {
 
         constructor(name = "") {
-            this.worldTransform = mat4.identity();
-            this.worldTransformDirty = false;
+            this._worldTransform = mat4.identity();
+            this._worldTransformDirty = false;
 
-            this.localPosition = vec3.zero;
-            this.localRotation = Quaternion.identity;
-            this.localScale = vec3.one;
+            this._localPosition = vec3.zero;
+            this._localRotation = Quaternion.identity;
+            this._localScale = vec3.one;
 
             // Use 0 as default value because 1 is the first valid node id.
             // So if things get messed up, it will wreak the least havoc.
@@ -65,33 +65,31 @@
             }
         }
 
-        get transform() {
-            if (this.worldTransformDirty) {
+        _updateWorldTransform() {
+            this._worldTransformDirty = false;
+
+            if (this.parent && this.parent !== this.scene) {
+                this._worldTransform = mat4.multiply(this.parent.worldTransform, this.localTransform);
+            }
+            else {
+                this._worldTransform = this.localTransform;
+            }
+        }
+
+        get worldTransform() {
+            if (this._worldTransformDirty) {
                 this._updateWorldTransform();
             }
             
-            return this.worldTransform;
-        }
-
-        _updateWorldTransform() {
-            this.worldTransformDirty = false;
-
-            // console.log(this.name + " update world transform");
-
-            if (this.parent && this.parent !== this.scene) {
-                this.worldTransform = mat4.multiply(this.parent.transform, this.localTransform);
-            }
-            else {
-                this.worldTransform = this.localTransform;
-            }
+            return this._worldTransform;
         }
 
         get localTransform() {
-            let p = this.localPosition;
-            let s = this.localScale;
+            let p = this._localPosition;
+            let s = this._localScale;
 
             // Rotate
-            let t = this.localRotation.toMat4();
+            let t = this._localRotation.toMat4();
 
             // Scale
             t[0] *= s[0];
@@ -114,20 +112,67 @@
             return t;
         }
 
+        get localPosition() {
+            return this._localPosition;
+        }
+
+        set localPosition(value) {
+            this._worldTransformDirty = true;
+            this._localPosition = value;
+
+        }
+
+        get localRotation() {
+            return this._localRotation;
+        }
+
+        set localRotation(value) {
+            this._worldTransformDirty = true;
+            this._localRotation = value;
+        }
+
+        get localScale() {
+            return this._localScale;
+        }
+
+        set localScale(value) {
+            this._worldTransformDirty = true;
+            this._localScale = value;
+        }
+
         get worldPosition() {
-            return mat4.getTranslation(this.transform);
+            return mat4.getTranslation(this.worldTransform);
         }
 
         set worldPosition(value) {
-            this.worldTransformDirty = true;
+            this._worldTransformDirty = true;
 
             // Do we have a parent?
             if (this.parent && this.parent !== this.scene) {
                 let t = this.parent.transform;
-                this.localPosition = vec3.subtract(mat4.getTranslation(t), value);
+                this._localPosition = vec3.subtract(mat4.getTranslation(t), value);
             }
             else {
-                this.localPosition = value;
+                this._localPosition = value;
+            }
+        }
+
+        get worldRotaton() {
+            return Quaternion.fromMat4(this.transform);
+        }
+
+        set worldRotation(rotation) {
+            this._worldTransformDirty = true;
+
+            // Do we have a parent?
+            if (this.parent && this.parent !== this.scene) {
+                let tmp = mat4.multiply(mat4.invert(this.parent.transform, rotation.toMat4()));
+                this._localRotation = Quaternion.fromMat4(tmp);
+                this._localRotation.normalize();
+
+            }
+            else {
+                this._localRotation = rotation;
             }
         }
 
@@ -137,26 +182,8 @@
         }
 
         set worldScale(_value) {
+            this._worldTransformDirty = true;
             // TODO
-        }
-
-        get worldRotaton() {
-            return Quaternion.fromMat4(this.transform);
-        }
-
-        set worldRotation(rotation) {
-            this.worldTransformDirty = true;
-
-            // Do we have a parent?
-            if (this.parent && this.parent !== this.scene) {
-                let tmp = mat4.multiply(mat4.invert(this.parent.transform, rotation.toMat4()));
-                this.localRotation = Quaternion.fromMat4(tmp);
-                this.localRotation.normalize();
-
-            }
-            else {
-                this.localRotation = rotation;
-            }
         }
 
         get forward() {
@@ -217,7 +244,19 @@
             }
 
             if (!keepTransform || keepTransform)
-                this.worldTransformDirty = true;
+                this._worldTransformDirty = true;
+        }
+
+        translateLocal(offset) {
+            this.localPosition = vec3.add(this._localPosition, offset);
+        }
+
+        rotateLocal(rotation) {
+            this.localRotation = Quaternion.multiply(this._localRotation, rotation);
+        }
+
+        scaleLocal(scale) {
+            this.localScale = vec3.multiply(this._localScale, scale);
         }
 
         /**
@@ -232,9 +271,9 @@
                 name: this.name,
                 enabled: this.enabled,
 
-                localPosition: Serialize.vec3(this.localPosition),
-                localRotation: Serialize.quaternion(this.localRotation),
-                localScale: Serialize.vec3(this.localScale),
+                localPosition: Serialize.vec3(this._localPosition),
+                localRotation: Serialize.quaternion(this._localRotation),
+                localScale: Serialize.vec3(this._localScale),
 
                 parent: serializer.nodeRef(this.parent),
                 components: this.components.map(comp => comp.serializeJSON(serializer)),
@@ -535,9 +574,9 @@
                 node.enabled = nodeSrc.enabled;
                 node.scene = this;
 
-                node.localPosition = Deserialize.vec3(nodeSrc.localPosition);
-                node.localRotation = Deserialize.quaternion(nodeSrc.localRotation);
-                node.localScale = Deserialize.vec3(nodeSrc.localScale);
+                node._localPosition = Deserialize.vec3(nodeSrc.localPosition);
+                node._localRotation = Deserialize.quaternion(nodeSrc.localRotation);
+                node._localScale = Deserialize.vec3(nodeSrc.localScale);
 
                 if (nodeSrc.parent) {
                     node.setParent(nodeIdMapping.get(nodeSrc.parent));

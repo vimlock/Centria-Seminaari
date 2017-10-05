@@ -237,10 +237,10 @@ vec4 GetLighting(vec4 diffColor)
         float diffFactor = max(dot(normal, surfaceToLight), 0.0);
         float specFactor = 0.0;
         if (diffFactor > 0.0)
-            specFactor = pow(max(dot(normal, halfVector), 0.0), 300.0);
+            specFactor = pow(max(dot(normal, halfVector), 0.0), 10.0);
 
-        float atten = clamp(1.0 - uLights[i].range / length(surfaceToLightDelta), 0.0, 1.0);
-        atten = 1.0 - pow(atten, 2.0);
+        float atten = clamp(1.0 - uLights[i].range * 2.0 / length(surfaceToLightDelta), 0.0, 1.0);
+        atten = pow(1.0 - atten, 2.0);
 
         lighting.rgb += (diffColor.rgb * uLights[i].color.rgb * diffFactor +
                         uSpecularColor.rgb * specFactor * atten) * uLights[i].color.a * atten;
@@ -498,15 +498,7 @@ function updateCamera(camNode, timeDelta) {
 
     d = vec3.add(d, vec3.scale(camNode.up, dy));
 
-    let position = vec3.add(camNode.worldPosition, d);
-
-    camNode.worldTransform[12] = 0.0;
-    camNode.worldTransform[13] = 0.0;
-    camNode.worldTransform[14] = 0.0;
-
-    camNode.worldTransform = mat4.multiply(
-        camNode.worldTransform, mat4.translate(position[0], position[1], position[2])
-    );
+    camNode.translateLocal(d);
 
 }
 
@@ -560,28 +552,11 @@ function sceneTest() {
     engine.resources.addBuiltinResource("ColorCube", mesh);
 	
     engine.resources.onAllLoaded(function() {
-    /*
-        let scene = new Scene();
-
-        engine.sceneTest = scene;
-        scene.deserializeJSON(engine.resources.getCached(JSONFile, "data/scenes/testScene.json").contents,
-            function(scene) {
-                console.log(JSON.stringify(scene.serializeJSON(), null, 1));
-            }
-        );
-    */
-
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
-                material, 1000);
-
-        /*
-        spawnCubes(scene, engine.resources.getCached(Mesh, "ColorCube"), material, 1000);
-        */
-
+            material, 1000);
     });
 	
     let cubeNode = scene.createChild("Cube");
-    cubeNode.worldTransform = mat4.identity();
 
     let cube = cubeNode.createComponent(Model);
     cube.mesh = mesh;
@@ -590,7 +565,7 @@ function sceneTest() {
     cube.materialName = "DefaultMaterial";
 
     let camNode = scene.createChild("Camera");
-	camNode.worldTransform = mat4.translate(0, 0, -5.0);
+	camNode.translateLocal([0, 0, -5]);
 
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
@@ -620,8 +595,6 @@ function sceneTest() {
 
     let prevFrameTime = Date.now();
 
-    console.log(scene);
-
     requestAnimationFrame(function update() {
         let currentFrameTime = Date.now();
         let timeDelta = currentFrameTime - prevFrameTime;
@@ -630,24 +603,14 @@ function sceneTest() {
 
         requestAnimationFrame(update);
 
-        cubeNode.worldTransform = mat4.multiply(
-            mat4.rotateY(Date.now() * 0.00001),
-            mat4.rotateX(Date.now() * 0.00001)
-        );
-
         lightRotator.localRotation = Quaternion.fromEulers(
                 Date.now() * 0.0005, Date.now() * 0.0005, Date.now() * 0.0005
         );
-        lightRotator.worldTransformDirty = true;
 
-        cubeNode.worldTransform = mat4.translate(0.0, 0, 0),
-
-        scene.updateHierarchy(false);
         scene.update();
-
-        // console.log("light 1 at " + lightNode.worldPosition);
-
         updateCamera(camNode, timeDelta);
+
+        scene.updateHierarchy();
 
         engine.renderer.resetPerformance();
         engine.renderer.renderScene(scene, camera);

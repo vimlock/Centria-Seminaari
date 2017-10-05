@@ -106,7 +106,7 @@
                 // Pick the lights
                 let light = node.getComponent(Light);
                 if (light) {
-                    renderer._queueLight(lights, light, node.transform);
+                    renderer._queueLight(lights, light, node.worldTransform);
                 }
 
                 // Pick the models
@@ -235,7 +235,7 @@
          * If shaderOverride is defined, it will used instead of the
          * materials own shader.
          */
-        _renderPass(camera, lights, batches, shaderOverride) {
+        _renderPass(camera, lights, batches, _shaderOverride) {
             // TODO: pick the closest and most brighest lights and upload them as uniforms
 
             // TODO: Maybe add instancing support? Might be out of scope
@@ -779,7 +779,7 @@
         /**
          * Remove unused shaders
          */
-        _clearShaderCache(lastUsed) {
+        _clearShaderCache(_lastUsed) {
             // TODO
         }
     };
