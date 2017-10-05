@@ -120,7 +120,7 @@ void main() {
     #endif
 
     #if defined(DIFFUSEMAP) || defined(NORMALMAP)
-        in vec2 vTexCoord;
+        in vec2 iTexCoord;
     #endif
 
     #ifdef NORMALMAP
@@ -131,6 +131,10 @@ void main() {
         in mat4 iInstanceModelMatrix;
     #endif
 
+#endif
+
+#if __VERSION__ >= 130
+    #define texture2D texture
 #endif
 
 #ifdef VERTEX_COLORS
@@ -201,13 +205,13 @@ struct Light {
 };
 
 
-uniform sampler2D sDiffuse;
-uniform sampler2D sSpecular;
-uniform sampler2D sAmbient;
+uniform sampler2D sDiffuseMap;
+uniform sampler2D sSpecularMap;
+uniform sampler2D sAmbientMap;
 uniform sampler2D sNormalMap;
 uniform sampler2D sHeightMap;
-uniform sampler2D sEmission;
-uniform sampler2D sEnvironment;
+uniform sampler2D sEmissionMap;
+uniform sampler2D sEnvironmentMap;
 
 uniform vec4 uDiffuseColor;
 uniform vec4 uSpecularColor;
@@ -281,7 +285,7 @@ void main()
     vec4 col;
 
     #ifdef DIFFUSEMAP
-        col = texture2D(sDiffuse, vTexCoord);
+        col = texture2D(sDiffuseMap, vTexCoord);
     #else
         col = vec4(1.0, 1.0, 1.0, 1.0);
     #endif
@@ -522,7 +526,8 @@ function sceneTest() {
     };
 
 	engine.resources = new ResourceManager();
-    engine.resources.queueForLoading(Mesh, "engine/resources/ball.obj");
+    engine.resources.queueForLoading(Mesh, "engine/resources/monkey.obj");
+    engine.resources.queueForLoading(Texture, "engine/resources/MonkeyPink.png");
     engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
     let scene = new Scene();
@@ -537,10 +542,12 @@ function sceneTest() {
         engine.models.cube.indices
     );
 
+    let shader = new ShaderSource("TestShader",
+        document.getElementById("test-shader").innerHTML);
+
     let material = new Material();
 
-    material.shader = new ShaderSource("TestShader",
-        document.getElementById("test-shader").innerHTML);
+    material.shader = shader;
 
     material.defines = new Map([
         // ["VERTEX_COLORS", null],
@@ -552,8 +559,23 @@ function sceneTest() {
     engine.resources.addBuiltinResource("ColorCube", mesh);
 	
     engine.resources.onAllLoaded(function() {
-        spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/ball.obj"),
-            material, 1000);
+
+        let t = engine.resources.getCached(Texture, "engine/resources/MonkeyPink.png");
+
+        let m = new Material();
+        m.shader = shader;
+        m.defines = new Map([
+            ["DIFFUSEMAP", null],
+            ["NORMALS", null],
+            ["LIGHTS", null],
+        ]);
+
+        m.textures = new Map([
+            ["diffuseMap", t]
+        ]);
+
+        spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
+            m, 100);
     });
 	
     let cubeNode = scene.createChild("Cube");

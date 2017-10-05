@@ -30,6 +30,31 @@
         }
     }
 
+    function GetTextureSlotIndex(name) {
+        switch (name) {
+        case "diffuseMap":  return 0;
+        case "specularMap": return 1;
+        case "normalMap":   return 2;
+        case "heightMap":   return 3;
+        case "ambientMap":  return 4;
+        case "emissionMap": return 5;
+        default:
+            return null;
+        }
+    }
+
+    function GetTextureSlotEnum(gl, index) {
+        switch(index) {
+        case 0: return gl.TEXTURE0;
+        case 1: return gl.TEXTURE1;
+        case 2: return gl.TEXTURE2;
+        case 3: return gl.TEXTURE3;
+        case 4: return gl.TEXTURE4;
+        case 5: return gl.TEXTURE5;
+        }
+    }
+
+
     /**
      * Holds the geometries which are collected from the scene
      * during rendering.
@@ -488,6 +513,25 @@
         }
 
         /**
+         * Setups a texture for rendering
+         */
+        _bindTexture(name, texture) {
+            this.performance.bindTexture++;
+
+            let gl = this.glContext;
+            let textureLocations = this.activeShader.textureLocations;
+
+            let index = GetTextureSlotIndex(name);
+            if (index === null) {
+                return;
+            }
+
+            gl.activeTexture(GetTextureSlotEnum(gl, index));
+            gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
+            gl.uniform1i(textureLocations[name], 0);
+        }
+
+        /**
          * Setups a material for rendering
          */
         _bindMaterial(material, defines) {
@@ -512,6 +556,10 @@
 
             gl.uniform4fv(uniforms.diffuseColor, material.diffuseColor.toArray());
             gl.uniform4fv(uniforms.specularColor, material.specularColor.toArray());
+
+            for (let [name, texture] of material.textures.entries()) {
+                this._bindTexture(name, texture);
+            }
         }
 
         _bindShader(shaderProgram) {
@@ -520,11 +568,16 @@
             }
 
             this.performance.bindShader++;
-            this.activeShader = shaderProgram;
 
-            let gl = this.glContext;
+            if (shaderProgram && shaderProgram.program) {
+                this.activeShader = shaderProgram;
+                let gl = this.glContext;
+                gl.useProgram(shaderProgram.program);
+            }
+            else {
+                this.activeShader = null;
+            }
 
-            gl.useProgram(shaderProgram.program);
         }
 
         /**
@@ -657,6 +710,13 @@
                 viewProjectionMatrix: gl.getUniformLocation(program, "uViewProjectionMatrix"),
 
                 projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
+            };
+
+            prog.textureLocations = {
+                diffuseMap: gl.getUniformLocation(program, "sDiffuseMap"),
+                specularMap: gl.getUniformLocation(program, "sSpecularMap"),
+                ambientMap: gl.getUniformLocation(program, "sAmbientMap"),
+                normalMap: gl.getUniformLocation(program, "sNormalMap"),
             };
 
             // Lights are a bit of a special case.
