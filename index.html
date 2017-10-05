@@ -224,6 +224,15 @@ uniform vec3 uViewForward;
 uniform vec3 uViewPosition;
 #endif
 
+#ifdef FOG
+
+// uFogParams.x: fogStart
+// uFogParams.y: fogEnd
+uniform vec2 uFogParams;
+uniform vec3 uFogColor;
+
+#endif
+
 out vec4 fColor;
 
 vec4 GetLighting(vec4 diffColor)
@@ -258,7 +267,6 @@ vec4 GetLighting(vec4 diffColor)
 
 vec4 GetDiffuse()
 {
-
     return uDiffuseColor;
 }
 
@@ -276,6 +284,18 @@ vec3 GetEmission()
 {
     return vec3(0.0, 0.0, 0.0);
 }
+
+#ifdef FOG
+
+float GetFogFactor(float pos)
+{
+    float start = uFogParams.x;
+    float end = uFogParams.y;
+
+    return 1.0 - clamp(((end - pos) / (end - start)), 0.0, 1.0);
+}
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Fragment shader
@@ -296,6 +316,10 @@ void main()
 
     col.rgb = GetLighting(col).rgb;
     // col.rgb = vec3(vTexCoord, 0.0);
+
+    #ifdef FOG
+    col.rgb = mix(col.rgb, uFogColor, GetFogFactor(gl_FragCoord.z / gl_FragCoord.w));
+    #endif
 
     fColor = col;
 }
@@ -533,6 +557,8 @@ function sceneTest() {
 
     let scene = new Scene();
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
+    scene.fogColor = new Color(0.15, 0.15, 0.15, 1.0);
+    scene.fogDistance = 80.0;
 
     engine.scene = scene;
 
@@ -569,6 +595,7 @@ function sceneTest() {
             ["DIFFUSEMAP", null],
             ["NORMALS", null],
             ["LIGHTS", null],
+            ["FOG", null],
         ]);
 
         m.textures = new Map([

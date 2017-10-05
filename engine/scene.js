@@ -508,6 +508,12 @@
             this.background = new Color(0.15, 0.15, 0.15, 1.0);
             this.ambientColor = new Color(0.01, 0.01, 0.01, 1.0);
 
+            this.fogEnabled = true;
+            this.fogMode = "linear"; // linear|quadratic
+            this.fogColor = new Color(0.1, 0.1, 0.1, 1.0);
+            this.fogStart = 10.0;
+            this.fogDistance = 30.0;
+
             /// Mapping for quick node access by id.
             this.nodes = new Map();
             
@@ -544,6 +550,13 @@
             return {
                 background: Serialize.color(this.background),
                 ambientColor: Serialize.color(this.ambientColor),
+
+                fogEnabled: this.fogEnabled,
+                fogMode: this.fogMode,
+                fogColor: Serialize.color(this.fogColor),
+                fogStart: this.fogStart,
+                fogDistance: this.fogDistance,
+
                 resources: resources,
                 nodes: nodes,
             };
@@ -571,6 +584,12 @@
 
             this.background = Deserialize.color(src.background);
             this.ambientColor = Deserialize.color(src.ambientColor);
+            
+            this.fogEnabled = src.fogEnabled,
+            this.fogMode = src.fogMode;
+            this.fogColor = Deserialize.color(src.fogColor);
+            this.fogStart = src.fogStart;
+            this.fogDistance = src.fogDistance;
 
             let nodeIdMapping = new Map();
             let componentIdMapping = new Map();

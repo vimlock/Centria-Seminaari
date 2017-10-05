@@ -459,6 +459,12 @@
             gl.uniform4fv(uniforms.ambientColor, cam.node.scene.ambientColor.toArray());
             gl.uniform3fv(uniforms.viewForward, cam.node.forward);
             gl.uniform3fv(uniforms.viewPosition, cam.node.worldPosition);
+
+            let scene = cam.node.scene;
+            let fogColor = scene.fogColor.toArray();
+
+            gl.uniform3f(uniforms.fogColor, fogColor[0], fogColor[1], fogColor[2]);
+            gl.uniform2f(uniforms.fogParams, scene.fogStart, scene.fogStart + scene.fogDistance);
         }
 
         /**
@@ -710,6 +716,9 @@
                 viewProjectionMatrix: gl.getUniformLocation(program, "uViewProjectionMatrix"),
 
                 projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
+
+                fogParams: gl.getUniformLocation(program, "uFogParams"),
+                fogColor: gl.getUniformLocation(program, "uFogColor"),
             };
 
             prog.textureLocations = {
@@ -739,7 +748,6 @@
 
             prog.updateKey();
 
-            /*
             let uniforms = Object.entries(prog.uniformLocations).
                 filter(x => x[1] != null).
                 map(x => x[0]).
@@ -747,6 +755,7 @@
 
             console.log("uniforms " + uniforms);
 
+            /*
             prog.lightUniformLocations.forEach(function(value, index) {
                 Object.keys(prog.uniformLocations).forEach(function(key) {
                     if (prog.lightUniformLocations[index][key]) {
@@ -756,9 +765,11 @@
             });
             */
 
+            /*
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);
             });
+            */
 
             return prog;
         }
