@@ -1,9 +1,9 @@
+/* global buildShaderKey, Camera, Color, Light, Material, Model, ShaderProgram, mat4, vec3 */
 "use strict";
 
 (function(context) {
 
     const MAX_LIGHTS = 4;
-    const MAX_TEXTURES = 8;
 
     /// If batch size does not exceed this limit, non-instanced draw calls will be used.
     /// This is because instancing has some overhead to it.
@@ -106,7 +106,7 @@
                 // Pick the lights
                 let light = node.getComponent(Light);
                 if (light) {
-                    renderer._queueLight(lights, light, node.worldTransform);
+                    renderer._queueLight(lights, light, node.transform);
                 }
 
                 // Pick the models
@@ -398,8 +398,9 @@
             for (let i = 0; i < MAX_LIGHTS; ++i) {
                 if (i < lights.length) {
                     let light = lights[i].light;
+                    let t = lights[i].transform;
 
-                    gl.uniform3fv(uniforms[i].position, light.node.worldPosition);
+                    gl.uniform3fv(uniforms[i].position, mat4.getTranslation(t));
                     gl.uniform4fv(uniforms[i].color, light.color.toArray());
                     gl.uniform1f(uniforms[i].range, light.range);
                 }
@@ -469,12 +470,18 @@
 
             gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
 
-            mesh.attributes.forEach(function(attrib, index) {
-                gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false,
-                    mesh.vertexSize,
-                    4 * attrib.offset
-                );
-                gl.enableVertexAttribArray(index);
+            let attribOffsets = this.activeShader.attribLocations;
+
+            mesh.attributes.forEach(function(attrib) {
+                let index = attribOffsets[attrib.name];
+
+                if (!(index === undefined || index < 0)) {
+                    gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false,
+                        mesh.vertexSize,
+                        4 * attrib.offset
+                    );
+                    gl.enableVertexAttribArray(index);
+                }
             });
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
@@ -686,11 +693,11 @@
                     }
                 });
             });
+            */
 
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);
             });
-            */
 
             return prog;
         }

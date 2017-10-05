@@ -1,3 +1,4 @@
+/* exported Event */
 
 /**
  * Useful event handler

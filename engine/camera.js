@@ -1,3 +1,6 @@
+/* global Component, engine, mat4 */
+/* exported DegToRad, RadToDeg */
+
 "use strict";
 
 const DegToRad = (Math.PI / 180.0);
@@ -5,9 +8,11 @@ const RadToDeg = 1.0 / DegToRad;
 
 (function(context) {
 
-    context.Camera = class {
+    context.Camera = class Camera extends Component{
 
         constructor() {
+            super();
+
             /// If false, the camera will use perspective projection
             this.orthographic = false;
 
@@ -57,6 +62,26 @@ const RadToDeg = 1.0 / DegToRad;
          */
         get viewDirection() {
             return this.node.worldTransform.forward;
+        }
+
+        serialize() {
+            return {
+                orhographic: this.orthographic,
+                orthographicSize: this.orthographicSize,
+                aspectRatio: this.aspectRatio,
+                fieldOfView: this.fieldOfView,
+                nearPlane: this.nearPlane,
+                farPlane: this.farPlane,
+            };
+        }
+
+        deserialize(deserializer, src) {
+            this.orthographic = src.orthographic;
+            this.orthographicSize = src.orthographicSize;
+            this.aspectRatio = src.aspectRatio;
+            this.fieldOfView = src.fieldOfView;
+            this.nearPlane = src.nearPlane;
+            this.farPlane = src.farPlane;
         }
     };
 

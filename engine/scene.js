@@ -1,3 +1,5 @@
+/* global engine, Color, vec3, mat4, Quaternion, Serialize, Deserialize */
+
 "use strict";
 
 (function(context) {
@@ -48,13 +50,12 @@
         updateHierarchy(force=false) {
             let dirty = force || this.worldTransformDirty;
 
-            if (dirty && parent) {
-                this.worldTransform = mat4.multiply(parent.worldTransform, this.localTransform);
-                this.worldTransformDirty = false;
+            if (dirty) {
+                this._updateWorldTransform();
             }
 
             for (let child of this.children) {
-                child.updateHierarchy(force);
+                child.updateHierarchy(dirty);
             }
         }
 
@@ -64,11 +65,98 @@
             }
         }
 
+        get transform() {
+            if (this.worldTransformDirty) {
+                this._updateWorldTransform();
+            }
+            
+            return this.worldTransform;
+        }
+
+        _updateWorldTransform() {
+            this.worldTransformDirty = false;
+
+            // console.log(this.name + " update world transform");
+
+            if (this.parent && this.parent !== this.scene) {
+                this.worldTransform = mat4.multiply(this.parent.transform, this.localTransform);
+            }
+            else {
+                this.worldTransform = this.localTransform;
+            }
+        }
+
         get localTransform() {
+            let p = this.localPosition;
+            let s = this.localScale;
+
+            // Rotate
+            let t = this.localRotation.toMat4();
+
+            // Scale
+            t[0] *= s[0];
+            t[1] *= s[1];
+            t[2] *= s[2];
+
+            t[4] *= s[0];
+            t[5] *= s[1];
+            t[6] *= s[2];
+
+            t[8] *= s[0];
+            t[9] *= s[1];
+            t[10] *= s[2];
+
+            // Translate
+            t[12] = p[0];
+            t[13] = p[1];
+            t[14] = p[2];
+
+            return t;
         }
 
         get worldPosition() {
-            return mat4.getTranslation(this.worldTransform);
+            return mat4.getTranslation(this.transform);
+        }
+
+        set worldPosition(value) {
+            this.worldTransformDirty = true;
+
+            // Do we have a parent?
+            if (this.parent && this.parent !== this.scene) {
+                let t = this.parent.transform;
+                this.localPosition = vec3.subtract(mat4.getTranslation(t), value);
+            }
+            else {
+                this.localPosition = value;
+            }
+        }
+
+        get worldScale() {
+            // TODO
+            return [1, 1, 1];
+        }
+
+        set worldScale(_value) {
+            // TODO
+        }
+
+        get worldRotaton() {
+            return Quaternion.fromMat4(this.transform);
+        }
+
+        set worldRotation(rotation) {
+            this.worldTransformDirty = true;
+
+            // Do we have a parent?
+            if (this.parent && this.parent !== this.scene) {
+                let tmp = mat4.multiply(mat4.invert(this.parent.transform, rotation.toMat4()));
+                this.localRotation = Quaternion.fromMat4(tmp);
+                this.localRotation.normalize();
+
+            }
+            else {
+                this.localRotation = rotation;
+            }
         }
 
         get forward() {
@@ -98,31 +186,63 @@
         }
 
         removeChild(child) {
+            this.removeChildAt(this.children.indexOf(child));
         }
 
         removeChildAt(n) {
+            if (n < 0) {
+                return;
+            }
+
+            this.children.splice(n, 1);
         }
 
         setParent(parent, keepTransform=true) {
-            this.parent = parent;
+            if (!(parent instanceof SceneNode)) { throw Error("Invalid parent type"); }
+
+            if (this.parent) {
+                this.parent.removeChild(this);
+            }
+
+            if (!parent) {
+                parent = this.scene;
+            }
 
             // TODO: Check if the scene is different, and either reject the change
             // or register the node to new scene
 
-            if (!keepTransform)
-                this.worldTransformDirty = true;
-
+            this.parent = parent;
             if (parent) {
                 parent.children.push(this);
             }
-            else {
-            }
+
+            if (!keepTransform || keepTransform)
+                this.worldTransformDirty = true;
         }
 
-        serializeJSON() {
+        /**
+         * Converts the SceneNode into a JSON representation from which it
+         * can be saved to a file
+         *
+         * @returns JSON object
+         */
+        serializeJSON(serializer) {
+            return {
+                id: this.id,
+                name: this.name,
+                enabled: this.enabled,
+
+                localPosition: Serialize.vec3(this.localPosition),
+                localRotation: Serialize.quaternion(this.localRotation),
+                localScale: Serialize.vec3(this.localScale),
+
+                parent: serializer.nodeRef(this.parent),
+                components: this.components.map(comp => comp.serializeJSON(serializer)),
+            };
         }
 
-        deserializeJSON(src) {
+        deserializeJSON(_src) {
+            // TODO
         }
 
         /**
@@ -181,10 +301,12 @@
          *
          * If no component exists with the given type, no action is performed.
          */
-        removeComponent(type) {
+        removeComponent(_type) {
+            // TODO
         }
 
-        removeComponentAt(n) {
+        removeComponentAt(_n) {
+            // TODO
         }
 
         /**
@@ -215,6 +337,103 @@
         }
     };
 
+    class SceneSerializer {
+        constructor() {
+            this.resources = [];
+        }
+
+        resourceRef(type, name) {
+            if (!name) {
+                return -1;
+            }
+
+            let id = 0;
+
+            for (let res of this.resources) {
+                if (res[1] == name) {
+                    if (res[0] !== type) {
+                        console.log("Warning, mismatching resource types " +
+                            type.name + " and " + res[0].name);
+                    }
+
+                    return id;
+                }
+
+                id++;
+            }
+
+            this.resources.push([type, name]);
+
+            return id;
+        }
+
+        resourceRefArray(type, names) {
+            return names.map(function (name) {
+                return this.resourceRef(type, name);
+            }, this).join(";");
+        }
+
+        nodeRef(target) {
+            return target ? target.id : 0;
+        }
+
+        componentRef(target) {
+            return target ? target.id : 0;
+        }
+    }
+
+
+    class SceneDeserializer {
+        constructor(scene, nodeMapping, componentMapping, resourceMapping) {
+            this.scene = scene;
+            this.resources = scene.engine.resources;
+            this.nodeMapping = nodeMapping;
+            this.componentMapping = componentMapping;
+            this.resourceMapping = resourceMapping;
+        }
+
+        resourceRef(type, id) {
+            if (id >= 0) {
+                return this.resources.getCached(type, this.resourceMapping[id][1]);
+            }
+            else {
+                return null;
+            }
+        }
+
+        resourceRefName(id) {
+            if (id >= 0)
+                return this.resourceMapping[id][1];
+            else
+                return null;
+        }
+
+        resourceRefArray(type, ids) {
+            return ids.split(";").map(function(id) {
+                if (id >= 0) {
+                    return this.resourceRef(type, id);
+                }
+                else {
+                    return null;
+                }
+            }, this);
+        }
+
+        resourceRefArrayNames(ids) {
+            return ids.split(";").map(function(id) {
+                return this.resourceRefName(id);
+            }, this);
+        }
+
+        nodeRef(id) {
+            return this.nodeMapping(id);
+        }
+
+        componentRef(id) {
+            return this.componentMapping(id);
+        }
+    }
+
     /**
      * The root scene node.
      *
@@ -227,6 +446,8 @@
     context.Scene = class extends context.SceneNode {
         constructor() {
             super();
+
+            this.engine = engine;
 
             this.scene = this;
 
@@ -244,6 +465,117 @@
 
             /// Used to generate unique component ids.
             this.nextNodeId = 1;
+        }
+
+        /**
+         * Converts the Scene into a JSON representation from which it
+         * can be saved to a file.
+         *
+         * This method overrides SceneNode.serializeJson because Scene objects
+         * have special properties which also need to be serialized.
+         */
+        serializeJSON() {
+
+            let nodes = [];
+            let serializer = new SceneSerializer();
+
+            for (let child of this.children) {
+                child.walkAll(function (node) {
+                    nodes.push(node.serializeJSON(serializer));
+                });
+            }
+
+            let resources = serializer.resources.map(x => x[0].name +";" + x[1]);
+
+            return {
+                background: Serialize.color(this.background),
+                ambientColor: Serialize.color(this.ambientColor),
+                resources: resources,
+                nodes: nodes,
+            };
+        }
+
+        /**
+         *
+         */
+        deserializeJSON(src, onCompleteCallback) {
+
+            // Queue resources for loading
+            let resourceMapping = src.resources.map(function(resource) {
+                let [typeName, resourceName] = resource.split(";");
+                let type = this.engine.resourceTypes[typeName];
+                
+                if (!type) {
+                    console.log("Unknown resource type \"" + typeName + "\"");
+                    return;
+                }
+
+                engine.resources.queueForLoading(type, resourceName);
+
+                return [type, resourceName];
+            }, this);
+
+            this.background = Deserialize.color(src.background);
+            this.ambientColor = Deserialize.color(src.ambientColor);
+
+            let nodeIdMapping = new Map();
+            let componentIdMapping = new Map();
+
+            let nodes = new Array(src.nodes.length);
+            let components = new Array();
+
+            for (let nodeSrc of src.nodes) {
+                let node = new context.SceneNode();
+                let id = this.nextNodeId++;
+
+                nodeIdMapping.set(nodeSrc.id, node);
+
+                node.id = id;
+                node.name = nodeSrc.name;
+                node.enabled = nodeSrc.enabled;
+                node.scene = this;
+
+                node.localPosition = Deserialize.vec3(nodeSrc.localPosition);
+                node.localRotation = Deserialize.quaternion(nodeSrc.localRotation);
+                node.localScale = Deserialize.vec3(nodeSrc.localScale);
+
+                if (nodeSrc.parent) {
+                    node.setParent(nodeIdMapping.get(nodeSrc.parent));
+                }
+                else {
+                    node.setParent(this);
+                }
+
+                for (let compSrc of nodeSrc.components) {
+                    let type = this.engine.componentTypes[compSrc.type];
+                    if (!type) {
+                        console.log("Component of type " + compSrc.type + " does not exist.");
+                        continue;
+                    }
+
+                    let comp = new type();
+                    comp.id = this.nextComponentId++;
+                    componentIdMapping.set(compSrc.id, comp);
+                    node.components.push(comp);
+
+                    components.push([compSrc, comp]);
+                }
+
+                nodes.push(node);
+            }
+
+            let deserializer = new SceneDeserializer(this, nodeIdMapping,
+                componentIdMapping, resourceMapping);
+
+            let scene = this;
+            engine.resources.onAllLoaded(function() {
+                for (let [compSrc, comp] of components) {
+                    comp.deserialize(deserializer, compSrc.properties);
+                }
+
+                if (onCompleteCallback)
+                    onCompleteCallback(scene);
+            });
         }
 
         /**

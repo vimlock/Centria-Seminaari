@@ -1,3 +1,4 @@
+/* global engine, Geometry, Resource, buildTestMesh */
 "use strict";
 
 (function(context) {
@@ -32,8 +33,10 @@
     /**
      * Collection of vertices and indices uploaded to the GPU.
      */
-    context.Mesh = class Mesh {
+    context.Mesh = class Mesh extends Resource {
         constructor() {
+            super();
+
             this.indexBuffer = null;
             this.vertexBuffer = null;
 
@@ -180,6 +183,8 @@
                        normals[indices[count] * 3 + 2]);
                 count++;
             }
+
+            console.log(n);
             
             return buildTestMesh(v, c, n, ind);
         }

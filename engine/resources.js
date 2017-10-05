@@ -29,6 +29,14 @@
          * requests a Texture with the sameUrl, an exception will be thrown.
          */
         getCached(type, sourceUrl) {
+            if (!type) {
+                throw new Error("No resource type given");
+            }
+
+            if (!sourceUrl) {
+                throw new Error("No resource name given");
+            }
+
             let tmp = this.cache.get(sourceUrl);
             if (!(tmp instanceof type)) {
                 throw new Error("Resource " + sourceUrl + " requested as " + type.name
@@ -37,6 +45,17 @@
             }
 
             return tmp;
+        }
+
+        /**
+         * Remove a resource from the cache.
+         *
+         * Note that this function has no effect if the resource is currently being loaded.
+         *
+         * @param name {string} Id of the resource.
+         */
+        removeCached(name) {
+            this.cache.delete(name);
         }
 
         /**
@@ -90,9 +109,15 @@
         onAllLoaded(callback) {
             if (this.loading.size === 0) {
                 callback();
+                return;
             }
+            else {
+                this.onAllLoadedEvent.addListener(callback);
+            }
+        }
 
-            this.onAllLoadedEvent.addListener(callback);
+        addBuiltinResource(name, resource) {
+            this.cache.set(name, resource);
         }
 
         /**

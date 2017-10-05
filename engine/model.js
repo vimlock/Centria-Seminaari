@@ -1,20 +1,25 @@
+/* global Component, Mesh, Material */
 "use strict";
 
 (function (context) {
     /**
      * Model component.
      */
-    context.Model = class Model {
+    context.Model = class Model extends Component {
 
         constructor()  {
+            super();
+
             /// Mesh to use for rendering.
             this.mesh = null;
+            this.meshName = null;
 
             /// Material to use for meshes geometries.
             /// Material 0 will be used for geometry 0, material 1 for geometry 1, and so forth.
             /// 
             /// If the material is missing, renderers default material will be used.
             this.materials = [];
+            this.materialNames = [];
         }
 
         /**
@@ -34,6 +39,14 @@
             this.materials[0] = value;
         }
 
+        get materialName() {
+            return this.materialNames.length > 0 ? this.materialNames[0] : null;
+        }
+
+        set materialName(value) {
+            this.materialNames[0] = value;
+        }
+
         /**
          * Safely gets a material by given index.
          *
@@ -47,5 +60,21 @@
                 return null;
             }
         }
+
+        serialize(serializer) {
+            return {
+                mesh: serializer.resourceRef(Mesh, this.meshName),
+                materials: serializer.resourceRefArray(Material, this.materialNames),
+            };
+        }
+
+        deserialize(deserializer, src) {
+            this.mesh = deserializer.resourceRef(Mesh, src.mesh);
+            this.meshName = deserializer.resourceRefName(src.mesh);
+
+            this.materials = deserializer.resourceRefArray(Material, src.materials);
+            this.materialNames = deserializer.resourceRefArrayNames(src.materials);
+        }
     };
+
 })(this);
