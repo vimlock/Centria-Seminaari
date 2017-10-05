@@ -672,6 +672,7 @@
             prog.attribLocations = {
                 position: gl.getAttribLocation(program, "iPosition"),
                 color: gl.getAttribLocation(program, "iColor"),
+                texCoord: gl.getAttribLocation(program, "iTexCoord"),
                 normal: gl.getAttribLocation(program, "iNormal"),
                 instanceModelMatrix: gl.getAttribLocation(program, "iInstanceModelMatrix"),
             };

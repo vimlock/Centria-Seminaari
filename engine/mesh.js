@@ -138,11 +138,11 @@
             }, 0);
         }
 
-        static parse(data, sourceUrl) {
-            return Mesh.fromOBJ(data, sourceUrl);
+        static parse(data, _sourceUrl) {
+            return Mesh.fromOBJ(data);
         }
 
-        static fromOBJ(data, sourceUrl) {
+        static fromOBJ(data) {
 
             /// Parse the mesh data
             let vertices   = data.slice(data.indexOf('v '),  data.indexOf('vt '));
@@ -153,41 +153,79 @@
             vertices   = vertices.match(/-?\d\.\d*/g).map(parseFloat);
             textCoords = textCoords.match(/\d\.\d*/g).map(parseFloat);
             normals    = normals.match(/-?\d\.\d*/g).map(parseFloat);
-            indices    = indices.match(/\d+/g).map(function(num) { return parseInt(num, 10) - 1 });
+            indices    = indices.match(/\d+/g).map(function(num) { return parseInt(num, 10) - 1; });
             
             
-            /** HOX: Temporarily fill textCoords with color */
-            /** Remove the next 4 lines to use texture coordinates normally */
-            let len = textCoords.length / 2;
-            textCoords.length = 0;
-            while(len--)
-                textCoords.push(...[ 0.0, 1.0, 0.0 ]);
-            
-            
-            let v = [], c = [], n = [], ind = [];
+            let v = [], t = [], n = [], ind = [];
             let ilen = indices.length;
             let count = 0;
 
             while(count < ilen) {
                 ind.push(count / 3);
                 v.push(vertices[indices[count] * 3 + 0],
-                       vertices[indices[count] * 3 + 1],
-                       vertices[indices[count] * 3 + 2]);
+                    vertices[indices[count] * 3 + 1],
+                    vertices[indices[count] * 3 + 2]);
                 count++;
-                c.push(textCoords[indices[count] * 3 + 0],
-                       textCoords[indices[count] * 3 + 1],
-                       textCoords[indices[count] * 3 + 2]);
+                t.push(textCoords[indices[count] * 3 + 0],
+                    textCoords[indices[count] * 3 + 1]);
                 count++;
                 n.push(normals[indices[count] * 3 + 0],
-                       normals[indices[count] * 3 + 1],
-                       normals[indices[count] * 3 + 2]);
+                    normals[indices[count] * 3 + 1],
+                    normals[indices[count] * 3 + 2]);
                 count++;
             }
 
-            return buildTestMesh(v, c, n, ind);
+            return Mesh.buildMesh(v, t, n, ind);
         }
 
-        static fromJSON(data, sourceUrl) {
+        /**
+         * Horrible copy pasted hack from buildTestMesh()
+         *
+         * TODO: Handle the vertex buffer creation inside the fromObj method.
+         *
+         *     There's no point in first copying the positions, normals, texcoords, etc.
+         *     into an array and then interleaving them, when you can build an interleaved
+         *     vertex data array directly.
+         *
+         *
+         * Oh lord forgive me for I have sinned...
+         */ 
+        static buildMesh(positions, uvs, normals, indices) {
+
+            if ((positions.length % 3) != 0) {
+                console.log("Vertex attribute lengths not multiply of 3");
+                return null;
+            }
+
+            let vCount = positions.length / 3;
+            let vSize = 8; // sizeof(position) + sizeof(texcoord) + sizeof(normal)
+
+            let vBuff = new Float32Array(vCount * vSize);
+
+            for (let i = 0; i < vCount; ++i) {
+                let offset = i * vSize;
+
+                vBuff[offset + 0] = positions[i * 3 + 0];
+                vBuff[offset + 1] = positions[i * 3 + 1];
+                vBuff[offset + 2] = positions[i * 3 + 2];
+
+                vBuff[offset + 3] = uvs[i * 2 + 0];
+                vBuff[offset + 4] = uvs[i * 2 + 1];
+
+                vBuff[offset + 5] = normals[i * 3 + 0];
+                vBuff[offset + 6] = normals[i * 3 + 1];
+                vBuff[offset + 7] = normals[i * 3 + 2];
+            }
+
+            let iBuff = new Uint16Array(indices);
+
+            let attrs = [
+                new context.MeshAttribute("position", 0, 3),
+                new context.MeshAttribute("texCoord", 3, 2),
+                new context.MeshAttribute("normal", 5, 3),
+            ];
+
+            return Mesh.fromData(vBuff, iBuff, attrs);
         }
 
     };
