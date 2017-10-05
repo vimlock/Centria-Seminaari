@@ -166,8 +166,8 @@
                     vertices[indices[count] * 3 + 1],
                     vertices[indices[count] * 3 + 2]);
                 count++;
-                t.push(textCoords[indices[count] * 3 + 0],
-                    textCoords[indices[count] * 3 + 1]);
+                t.push(textCoords[indices[count] * 2 + 0],
+                    1.0 -  textCoords[indices[count] * 2 + 1]);
                 count++;
                 n.push(normals[indices[count] * 3 + 0],
                     normals[indices[count] * 3 + 1],

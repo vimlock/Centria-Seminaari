@@ -295,6 +295,7 @@ void main()
     #endif
 
     col.rgb = GetLighting(col).rgb;
+    // col.rgb = vec3(vTexCoord, 0.0);
 
     fColor = col;
 }
