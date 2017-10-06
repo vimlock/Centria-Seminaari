@@ -585,14 +585,9 @@ function sceneTest() {
         document.getElementById("test-shader").innerHTML);
 
     let material = new Material();
-
     material.shader = shader;
-
-    material.defines = new Map([
-        // ["VERTEX_COLORS", null],
-        ["NORMALS", null],
-        ["LIGHTS", null]
-    ]);
+    material.enableDefine("NORMALS");
+    material.enableDefine("LIGHTS");
 
     engine.resources.addBuiltinResource("DefaultMaterial", material);
     engine.resources.addBuiltinResource("ColorCube", mesh);
@@ -603,12 +598,11 @@ function sceneTest() {
 
         let m = new Material();
         m.shader = shader;
-        m.defines = new Map([
-            ["DIFFUSEMAP", null],
-            ["NORMALS", null],
-            ["LIGHTS", null],
-            ["FOG", null],
-        ]);
+
+        m.enableDefine("DIFFUSEMAP");
+        m.enableDefine("NORMALS");
+        m.enableDefine("LIGHTS");
+        m.enableDefine("FOG");
 
         m.textures = new Map([
             ["diffuseMap", t]
@@ -627,12 +621,11 @@ function sceneTest() {
         m.diffuseColor = Color.white;
         m.specularColor = Color.black;
         m.shader = shader;
-        m.defines = new Map([
-            ["AMBIENTMAP", null],
-            ["LIGHTS", null],
-            ["DIFFUSEMAP", null],
-            ["NORMALS", null],
-        ]);
+
+        m.enableDefine("AMBIENTMAP");
+        m.enableDefine("LIGHTS");
+        m.enableDefine("DIFFUSEMAP");
+        m.enableDefine("NORMALS");
 
         m.textures = new Map([
             ["diffuseMap", engine.resources.getCached(Texture, "data/textures/CultistDiffuse.png")],
