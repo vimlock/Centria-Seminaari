@@ -743,6 +743,8 @@
                 color: gl.getAttribLocation(program, "iColor"),
                 texCoord: gl.getAttribLocation(program, "iTexCoord"),
                 normal: gl.getAttribLocation(program, "iNormal"),
+                tangent: gl.getAttribLocation(program, "iTangent"),
+                bitangent: gl.getAttribLocation(program, "iBitangent"),
                 instanceModelMatrix: gl.getAttribLocation(program, "iInstanceModelMatrix"),
             };
 

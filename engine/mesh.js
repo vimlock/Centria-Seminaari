@@ -1,10 +1,10 @@
-/* global engine, Geometry, Resource, buildTestMesh */
+/* global engine, Geometry, Resource */
 "use strict";
 
 (function(context) {
 
     context.MeshAttributeNames = [
-        "position", "color", "texCoord", "normal", "tangent"
+        "position", "color", "texCoord", "normal", "tangent", "bitangent"
     ];
 
     /**

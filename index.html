@@ -107,6 +107,10 @@ void main() {
     #define TEXCOORDS
 #endif
 
+#if defined(NORMALMAP)
+    #define TANGENTS
+#endif
+
 #ifdef COMPILE_VERTEX
     #define varying out
 
@@ -133,6 +137,7 @@ void main() {
 
     #ifdef NORMALMAP
         in vec3 iTangent;
+        in vec3 iBitangent;
     #endif
 
     #ifdef INSTANCING
@@ -159,6 +164,7 @@ void main() {
 
 #ifdef NORMALMAP
     varying vec3 vTangent;
+    varying vec3 vBitangent;
 #endif
 
 varying vec3 vWorldPos;
@@ -194,9 +200,13 @@ void main()
         vColor = iColor;
     #endif
 
-
     #ifdef TEXCOORDS
         vTexCoord = iTexCoord;
+    #endif
+
+    #ifdef NORMALMAP
+        vTangent = iTangent;
+        bBitangent = iBitangent;
     #endif
 
     gl_Position = pos;
