@@ -38,6 +38,11 @@
             }
 
             let tmp = this.cache.get(sourceUrl);
+            if (!tmp) {
+                console.log("Requested resource " + sourceUrl + " does not exist");
+                return null;
+            }
+
             if (!(tmp instanceof type)) {
                 throw new Error("Resource " + sourceUrl + " requested as " + type.name
                     + " but it has been loaded as " + tmp.constructor.name
