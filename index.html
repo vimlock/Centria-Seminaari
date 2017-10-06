@@ -325,9 +325,9 @@ void main()
 
     #ifdef AMBIENTMAP
         float ambientIntensity = texture2D(sAmbientMap, vTexCoord).r;
-        col.rgb += uAmbientColor.rgb * ambientIntensity;
+        col.rgb += diff.rgb * uAmbientColor.rgb * ambientIntensity;
     #else
-        col.rgb += uAmbientColor.rgb;
+        col.rgb += diff.rgb * uAmbientColor.rgb;
     #endif
 
     #ifdef EMSSIONMAP
