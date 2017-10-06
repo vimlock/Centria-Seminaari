@@ -657,8 +657,9 @@ function sceneTest() {
     lightNode.setParent(lightRotator);
 
     let light = lightNode.createComponent(Light);
-    light.color = new Color(0.1, 0.1, 1.0, 1.2);
+    light.color = new Color(0.8, 0.8, 0.8, 1.0);
 
+    /*
     lightNode = scene.createChild("Light2");
     lightNode.localPosition = [-30, -30, 30];
     lightNode.setParent(lightRotator);
@@ -672,6 +673,7 @@ function sceneTest() {
 
     light = lightNode.createComponent(Light);
     light.color = new Color(1.0, 0.1, 0.1, 1.2);
+    */
 
     let prevFrameTime = Date.now();
 

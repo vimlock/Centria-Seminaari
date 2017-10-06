@@ -48,6 +48,8 @@
             /// vec4 [number, number, number, number]
             this.shaderUniforms = new Map();
 
+            /// List of shader defines to pass for shader
+            /// You should not access this directly.
             this.defines = new Map();
         }
 
