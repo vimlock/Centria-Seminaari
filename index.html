@@ -98,6 +98,18 @@ void main() {
     
     precision mediump float;
 #endif
+#define NORMALMAP
+#if defined(DIFFUSEMAP) || defined(SPECMAP) || defined(AMBIENTMAP) || defined(NORMALMAP)
+    #define TEXCOORDS
+#endif
+
+#if defined(EMISSIONMAP) && !defined(TEXCOORDS)
+    #define TEXCOORDS
+#endif
+
+#if defined(NORMALMAP)
+    #define TANGENTS
+#endif
 
 #ifdef COMPILE_VERTEX
     #define varying out
@@ -113,18 +125,19 @@ void main() {
 
     #ifdef VERTEX_COLORS
         in vec3 iColor;
-        #endif
+    #endif
 
     #ifdef NORMALS
         in vec3 iNormal;
     #endif
 
-    #if defined(DIFFUSEMAP) || defined(NORMALMAP)
+    #ifdef TEXCOORDS
         in vec2 iTexCoord;
     #endif
 
     #ifdef NORMALMAP
         in vec3 iTangent;
+        in vec3 iBitangent;
     #endif
 
     #ifdef INSTANCING
@@ -141,7 +154,7 @@ void main() {
     varying vec3 vColor;
 #endif
 
-#if defined(DIFFUSEMAP) || defined(NORMALMAP)
+#ifdef TEXCOORDS
     varying vec2 vTexCoord;
 #endif
 
@@ -151,6 +164,7 @@ void main() {
 
 #ifdef NORMALMAP
     varying vec3 vTangent;
+    varying vec3 vBitangent;
 #endif
 
 varying vec3 vWorldPos;
@@ -186,9 +200,13 @@ void main()
         vColor = iColor;
     #endif
 
-
-    #if defined(DIFFUSEMAP) || defined(NORMALMAP)
+    #ifdef TEXCOORDS
         vTexCoord = iTexCoord;
+    #endif
+
+    #ifdef NORMALMAP
+        vTangent = iTangent;
+        vBitangent = iBitangent;
     #endif
 
     gl_Position = pos;
@@ -224,9 +242,20 @@ uniform vec3 uViewForward;
 uniform vec3 uViewPosition;
 #endif
 
+#ifdef FOG
+
+// uFogParams.x: fogStart
+// uFogParams.y: fogEnd
+uniform vec2 uFogParams;
+uniform vec3 uFogColor;
+
+#endif
+
 out vec4 fColor;
 
-vec4 GetLighting(vec4 diffColor)
+#ifdef LIGHTS
+
+vec4 GetLighting(vec4 diffColor, vec4 specColor)
 {
     vec4 lighting = vec4(0.0, 0.0, 0.0, 1.0);
     vec3 normal = normalize(vNormal);
@@ -247,54 +276,67 @@ vec4 GetLighting(vec4 diffColor)
         atten = pow(1.0 - atten, 2.0);
 
         lighting.rgb += (diffColor.rgb * uLights[i].color.rgb * diffFactor +
-                        uSpecularColor.rgb * specFactor * atten) * uLights[i].color.a * atten;
-
-        // lighting.rgb += diffFactor * vec3(0.1, 0.1, 0.1);
-        // lighting.rgb += specFactor * vec3(1.0, 1.0, 1.0);
+                        specColor.rgb * specFactor * atten) * uLights[i].color.a * atten;
     }
 
-    return lighting + uAmbientColor;
+    return lighting;
 }
 
-vec4 GetDiffuse()
+#endif
+
+#ifdef FOG
+
+float GetFogFactor(float pos)
 {
+    float start = uFogParams.x;
+    float end = uFogParams.y;
 
-    return uDiffuseColor;
+    return 1.0 - clamp(((end - pos) / (end - start)), 0.0, 1.0);
 }
 
-vec3 GetSpecular()
-{
-    return vec3(0.1, 0.1, 0.1);
-}
-
-vec3 GetAmbient()
-{
-    return uAmbientColor.rgb;
-}
-
-vec3 GetEmission()
-{
-    return vec3(0.0, 0.0, 0.0);
-}
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Fragment shader
 
 void main()
 {
-    vec4 col;
+    vec4 diff = uDiffuseColor;
 
     #ifdef DIFFUSEMAP
-        col = texture2D(sDiffuseMap, vTexCoord);
-    #else
-        col = vec4(1.0, 1.0, 1.0, 1.0);
+        diff *= texture2D(sDiffuseMap, vTexCoord);
     #endif
 
     #ifdef VERTEX_COLORS
-        col.rgb *= vColor;
+        diff.rgb *= vColor;
     #endif
 
-    col.rgb = GetLighting(col).rgb;
+    #ifdef LIGHTS
+        vec4 spec = uSpecularColor;
+
+        #ifdef SPECMAP
+            spec.rgb *= texture2D(sSpecularMap, vTexCoord).rgb;
+        #endif
+
+        vec4 col = vec4(GetLighting(diff, spec).rgb, diff.a);
+    #else
+        vec4 col = diff;
+    #endif
+
+    #ifdef AMBIENTMAP
+        float ambientIntensity = texture2D(sAmbientMap, vTexCoord).r;
+        col.rgb += diff.rgb * uAmbientColor.rgb * ambientIntensity;
+    #else
+        col.rgb += diff.rgb * uAmbientColor.rgb;
+    #endif
+
+    #ifdef EMSSIONMAP
+        col.rgb += col.rgb * uEmissionMap.r;
+    #endif
+
+    #ifdef FOG
+        col.rgb = mix(col.rgb, uFogColor, GetFogFactor(gl_FragCoord.z / gl_FragCoord.w));
+    #endif
 
     fColor = col;
 }
@@ -530,8 +572,15 @@ function sceneTest() {
     engine.resources.queueForLoading(Texture, "engine/resources/MonkeyPink.png");
     engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
+    engine.resources.queueForLoading(Mesh, "data/models/Occultist.obj");
+    engine.resources.queueForLoading(Texture, "data/textures/CultistAmbient.png");
+    engine.resources.queueForLoading(Texture, "data/textures/CultistDiffuse.png");
+    engine.resources.queueForLoading(Texture, "data/textures/CultistNormals.png");
+
     let scene = new Scene();
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
+    scene.fogColor = new Color(0.15, 0.15, 0.15, 1.0);
+    scene.fogDistance = 80.0;
 
     engine.scene = scene;
 
@@ -546,14 +595,9 @@ function sceneTest() {
         document.getElementById("test-shader").innerHTML);
 
     let material = new Material();
-
     material.shader = shader;
-
-    material.defines = new Map([
-        // ["VERTEX_COLORS", null],
-        ["NORMALS", null],
-        ["LIGHTS", null]
-    ]);
+    material.enableDefine("NORMALS");
+    material.enableDefine("LIGHTS");
 
     engine.resources.addBuiltinResource("DefaultMaterial", material);
     engine.resources.addBuiltinResource("ColorCube", mesh);
@@ -564,18 +608,42 @@ function sceneTest() {
 
         let m = new Material();
         m.shader = shader;
-        m.defines = new Map([
-            ["DIFFUSEMAP", null],
-            ["NORMALS", null],
-            ["LIGHTS", null],
-        ]);
+
+        m.enableDefine("DIFFUSEMAP");
+        m.enableDefine("NORMALS");
+        m.enableDefine("LIGHTS");
+        m.enableDefine("FOG");
 
         m.textures = new Map([
             ["diffuseMap", t]
         ]);
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
-            m, 100);
+            m, 10);
+
+        let testNode = scene.createChild("Cube");
+        testNode.translateLocal([0, 5, 0]);
+
+        let model = testNode.createComponent(Model);
+        model.mesh = engine.resources.getCached(Mesh, "data/models/Occultist.obj");
+
+        m = new Material();
+        m.diffuseColor = Color.white;
+        m.specularColor = Color.black;
+        m.shader = shader;
+
+        m.enableDefine("AMBIENTMAP");
+        m.enableDefine("LIGHTS");
+        m.enableDefine("DIFFUSEMAP");
+        m.enableDefine("NORMALS");
+
+        m.textures = new Map([
+            ["diffuseMap", engine.resources.getCached(Texture, "data/textures/CultistDiffuse.png")],
+            ["ambientMap", engine.resources.getCached(Texture, "data/textures/CultistAmbient.png")],
+            ["normalMap", engine.resources.getCached(Texture, "data/textures/CultistNormals.png")],
+        ]);
+
+        model.material = m;
     });
 	
     let cubeNode = scene.createChild("Cube");
@@ -599,8 +667,9 @@ function sceneTest() {
     lightNode.setParent(lightRotator);
 
     let light = lightNode.createComponent(Light);
-    light.color = new Color(0.1, 0.1, 1.0, 1.2);
+    light.color = new Color(0.8, 0.8, 0.8, 1.0);
 
+    /*
     lightNode = scene.createChild("Light2");
     lightNode.localPosition = [-30, -30, 30];
     lightNode.setParent(lightRotator);
@@ -614,6 +683,7 @@ function sceneTest() {
 
     light = lightNode.createComponent(Light);
     light.color = new Color(1.0, 0.1, 0.1, 1.2);
+    */
 
     let prevFrameTime = Date.now();
 
