@@ -98,6 +98,18 @@ void main() {
     
     precision mediump float;
 #endif
+#define NORMALMAP
+#if defined(DIFFUSEMAP) || defined(SPECMAP) || defined(AMBIENTMAP) || defined(NORMALMAP)
+    #define TEXCOORDS
+#endif
+
+#if defined(EMISSIONMAP) && !defined(TEXCOORDS)
+    #define TEXCOORDS
+#endif
+
+#if defined(NORMALMAP)
+    #define TANGENTS
+#endif
 
 #if defined(DIFFUSEMAP) || defined(SPECMAP) || defined(AMBIENTMAP) || defined(NORMALMAP)
     #define TEXCOORDS
@@ -206,7 +218,7 @@ void main()
 
     #ifdef NORMALMAP
         vTangent = iTangent;
-        bBitangent = iBitangent;
+        vBitangent = iBitangent;
     #endif
 
     gl_Position = pos;

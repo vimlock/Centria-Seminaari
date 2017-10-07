@@ -20,24 +20,14 @@ engine.filehandler.handleFileUpload = function(e) {
 	if(!/[\w\d]+\.obj/i.test(file.name)) {
 		//document.getElementById("list").innerHTML = "only .obj files are currently supported";
 		files.length = 0;
-		return
+		return;
 	}
 	
 	var reader = new FileReader();
-	/*
-	reader.onload = function(e) {
-		//document.getElementById("list").innerHTML = e.target.result;
-		//engine.models[this.fileName.slice(0, this.fileName.indexOf(".obj"))] = webgl.parseObjFileToModel(e.target.result, true);
-		engine.models.cube = webgl.parseObjFileToModel(e.target.result, true);
-		engine.models.cube.program = engine.gl.program.default;
-		engine.models.cube.vertNum = engine.models.cube.vertices.length / 3;
-		engine.models.cube.vao = webgl.createModelVaoAndBuffers(engine.gl, engine.models.cube);
-		obj.model = engine.models.cube;
-	}
-	*/
-	reader.onload = function(e) {
-		engine.models[this.fileName.slice(0, this.fileName.indexOf(".obj"))] = webgl.parseObjFileToModel(e.target.result, true);
-	}
 	reader.fileName = file.name;
+	reader.onload = function() {
+		let rawMesh = Mesh.parse(reader.result);
+		// let mesh = Mesh.fromData(rawMesh.);
+	}
 	reader.readAsText(file, "UTF-8");
 }
