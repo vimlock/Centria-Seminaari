@@ -76,8 +76,12 @@
                 geometries = [
                     new Geometry(0, indices.length, null)
                 ];
+            } else {
+                geometries = geometries.map(function(g) {
+                    return new Geometry(g.offset, g.indCount, null)
+                });
             }
-            console.log(vertices);
+            
             let gl = engine.gl;
             // Upload the vertices to the gpu
             let vb = gl.createBuffer();
@@ -102,7 +106,7 @@
             for (let g of mesh.geometries) {
                 g.mesh = mesh;
             }
-
+            
             return mesh;
         }
 
@@ -144,16 +148,37 @@
         static fromOBJ(data) {
 
             /// Parse the mesh data
-            let vertices   = data.slice(data.indexOf('v '),  data.indexOf('vt '));
-            let textCoords = data.slice(data.indexOf('vt '), data.indexOf('vn '));
-            let normals    = data.slice(data.indexOf('vn '), data.indexOf('f '));
-            let indices    = data.slice(data.indexOf('f '),  data.length);
-
+            let vertices   = data.match(/v (?:-?\d\.\d+\s){3}/g).join("");
+            let textCoords = data.match(/vt (?:\d\.\d+\s){2}/g).join("");
+            let normals    = data.match(/vn (?:-?\d\.\d+\s){3}/g).join("");
+            let indices    = data.match(/f (?:\d+\/\d+\/\d+\s){3}|(?:usemtl (?:\w+)\s)/g);
+            
+            // console.log(vertices);
+            // console.log(textCoords);
+            // console.log(normals);
+            // console.log(indices);
+            
+            indices.splice(0, 1);
+            let geometries = [];
+            let offset = 0;
+            let iCount = 0;
+            for(let i = 0; i < indices.length; i++) {
+                iCount++;
+                if(/usemtl (?:\w+)\s/.test(indices[i])) {
+                    geometries.push({ offset: offset, indCount: iCount - 1 });
+                    indices.splice(i, 1);
+                    offset = i;
+                    iCount = 0;
+                    i--;
+                }
+            }
+            geometries.push({ offset: offset === 0 ? offset : offset + 1, indCount: iCount });
+            indices = indices.join("");
+            
             vertices   = vertices.match(/-?\d\.\d*/g).map(parseFloat);
             textCoords = textCoords.match(/\d\.\d*/g).map(parseFloat);
             normals    = normals.match(/-?\d\.\d*/g).map(parseFloat);
             indices    = indices.match(/\d+/g).map(function(num) { return parseInt(num, 10) - 1; });
-
 
             let v = [], t = [], n = [], ind = [];
             let ilen = indices.length;
@@ -208,7 +233,7 @@
 				
             }
 			
-            return Mesh.buildMesh(v, t, n, ind, tan, bitan);
+            return Mesh.buildMesh(v, t, n, ind, tan, bitan, geometries);
         }
 
         /**
@@ -223,21 +248,21 @@
          *
          * Oh lord forgive me for I have sinned...
          */ 
-        static buildMesh(positions, uvs, normals, indices, tangents, bitangents) {
+        static buildMesh(positions, uvs, normals, indices, tangents, bitangents, geometries) {
 
             if ((positions.length % 3) != 0) {
                 console.log("Vertex attribute lengths not multiply of 3");
                 return null;
             }
 
-            let vCount = positions.length / 3;
+            let vCount = indices.length;
             let vSize = 14; // sizeof(position) + sizeof(texcoord) + sizeof(normal) + sizeOf(tangent) + sizeOf(bitangent)
 
             let vBuff = new Float32Array(vCount * vSize);
 
             for (let i = 0; i < vCount; ++i) {
                 let offset = i * vSize;
-
+                
                 vBuff[offset + 0] = positions[i * 3 + 0];
                 vBuff[offset + 1] = positions[i * 3 + 1];
                 vBuff[offset + 2] = positions[i * 3 + 2];
@@ -268,7 +293,7 @@
                 new context.MeshAttribute("bitangent", 11, 3)
             ];
 			
-            return Mesh.fromData(vBuff, iBuff, attrs);
+            return Mesh.fromData(vBuff, iBuff, attrs, geometries);
 		}
 
     };
