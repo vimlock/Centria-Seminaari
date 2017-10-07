@@ -323,7 +323,9 @@
 
                 if (this.activeMesh.indexCount < geo.indexOffset + geo.indexCount) {
                     console.log("Geometry indices out of range");
-                    continue;
+                    console.log(mesh);
+                    console.log(geo);
+                    debugger;
                 }
 
                 this.performance.vertices += geo.indexCount * batch.transforms.length;
