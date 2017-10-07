@@ -62,7 +62,6 @@
          *  @returns {Mesh}
          */
         static fromData(vertices, indices, attributes, geometries) {
-
             // Check that the mesh attributes are sensible.
             // TODO: check that the component count is sensible
             // TODO: check that components dont overlap eachother
@@ -165,14 +164,14 @@
             for(let i = 0; i < indices.length; i++) {
                 iCount++;
                 if(/usemtl (?:\w+)\s/.test(indices[i])) {
-                    geometries.push({ offset: offset, indCount: iCount - 1 });
+                    geometries.push({ offset: offset, indCount: (iCount - 1) * 3 });
                     indices.splice(i, 1);
                     offset = i;
                     iCount = 0;
                     i--;
                 }
             }
-            geometries.push({ offset: offset === 0 ? offset : offset + 1, indCount: iCount });
+            geometries.push({ offset: offset === 0 ? offset : offset + 1, indCount: iCount * 3 });
             indices = indices.join("");
             
             vertices   = vertices.match(/-?\d\.\d*/g).map(parseFloat);
