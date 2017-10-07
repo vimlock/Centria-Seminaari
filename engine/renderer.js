@@ -321,6 +321,11 @@
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
                     continue;
 
+                if (this.activeMesh.indexCount < geo.indexOffset + geo.indexCount) {
+                    console.log("Geometry indices out of range");
+                    continue;
+                }
+
                 this.performance.vertices += geo.indexCount * batch.transforms.length;
 
                 if (instanced) {
@@ -328,6 +333,13 @@
                 }
                 else {
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
+                }
+
+                if (gl.getError()) {
+                    console.log("Error rendering geometry");
+                    console.log(mesh);
+                    console.log(geo);
+                    debugger;
                 }
             }
         }
@@ -344,7 +356,7 @@
             for (let t of batch.transforms) {
                 this._bindTransform(t);
 
-                gl.drawElements(drawType, indexCount, indexType, indexOffset);
+                gl.drawElements(drawType, indexCount, indexType, indexOffset * 2);
 
                 this.performance.numDrawCalls++;
             }
@@ -396,7 +408,7 @@
                     gl.bufferSubData(gl.ARRAY_BUFFER, 0, sub);
 
                     // Finally, it's draw time.
-                    gl.drawElementsInstanced(drawType, indexCount, indexType, indexOffset, instanceNum);
+                    gl.drawElementsInstanced(drawType, indexCount, indexType, indexOffset * 2, instanceNum);
 
                     this.performance.numDrawCalls++;
                     instanceNum = 0;
@@ -502,6 +514,10 @@
             gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
 
             let attribOffsets = this.activeShader.attribLocations;
+
+            for (let i = 0; i < 10; i++) {
+                gl.disableVertexAttribArray(i);
+            }
 
             mesh.attributes.forEach(function(attrib) {
                 let index = attribOffsets[attrib.name];
