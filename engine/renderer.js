@@ -190,6 +190,52 @@
             this._renderPass(camera, lights, transparentGeomBatches, shaderOverride);
         }
 
+        renderDebugLines(debugRenderer, camera) {
+
+            if (debugRenderer._nextVertexIndex <= 0) {
+                return;
+            }
+
+            // Setup drawing state
+            let shader = this._getShaderProgram(debugRenderer._shader);
+            if (!shader) {
+                return;
+            }
+
+            this._bindShader(shader);
+            if (!this.activeShader) {
+                return;
+            }
+
+
+            debugRenderer.updateBuffers();
+
+            this._bindCamera(camera);
+
+            let gl = this.glContext;
+
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.enable(gl.BLEND);
+            gl.enable(gl.DEPTH_TEST);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, debugRenderer._vbo);
+            gl.vertexAttribPointer(0, 3, gl.FLOAT, false, debugRenderer._vertexSize * 4, 0);
+            gl.vertexAttribPointer(1, 4, gl.FLOAT, false, debugRenderer._vertexSize * 4, 3 * 4);
+
+            // Draw faces
+            if (debugRenderer._nextFaceIndex > 0) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
+                gl.drawElements(gl.TRIANGLES, debugRenderer._nextFaceIndex, gl.UNSIGNED_SHORT, 0);
+            }
+            
+            // Draw lines
+            if (debugRenderer._nextLineIndex > 0) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
+                gl.drawElements(gl.LINES, debugRenderer._nextLineIndex, gl.UNSIGNED_SHORT, 0);
+            }
+
+        }
+
         /**
          * Add a geometry to a batch.
          *
@@ -845,6 +891,10 @@
          * @returns string
          */
         _buildShaderDefines(defines) {
+            if (!defines) {
+                return "";
+            }
+
             return Array.from(defines.keys()).sort().map(function(key) {
                 let val = defines[key];
                 if (val) {

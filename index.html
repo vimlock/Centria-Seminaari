@@ -34,6 +34,7 @@
 		<script src="engine/scene.js"></script>
 		<script src="engine/webgl.js"></script>
 		<script src="engine/shader.js"></script>
+		<script src="engine/debug.js"></script>
 		<script src="engine/renderer.js"></script>
 		<script src="engine/material.js"></script>
 		<script src="engine/model.js"></script>
@@ -89,6 +90,51 @@ out vec4 outColor;
 void main() {
 	outColor = fragColor;
 }
+</script>
+
+<script id="debug-shader" type="noscript">
+#ifdef COMPILE_FRAGMENT
+    #define varying in
+    
+    precision mediump float;
+#endif
+
+#ifdef COMPILE_VERTEX
+    #define varying out
+
+    uniform mat4 uViewProjectionMatrix;
+
+    in vec3 iPosition;
+    in vec4 iColor;
+#endif
+
+varying vec4 vColor;
+
+#ifdef COMPILE_VERTEX
+
+///////////////////////////////////////////////////////////////////////////////
+// Vertex shader
+
+void main() {
+    vColor = iColor;
+    gl_Position = uViewProjectionMatrix * vec4(iPosition, 1.0);
+}
+
+#endif
+
+#ifdef COMPILE_FRAGMENT
+
+out vec4 fColor;
+
+///////////////////////////////////////////////////////////////////////////////
+// Fragment shader
+
+void main() {
+    fColor = vColor;
+}
+
+#endif
+
 </script>
 
 
@@ -583,6 +629,12 @@ function updateCamera(camNode, timeDelta) {
 
 }
 
+function drawOriginAxes(debug, size, opacity=1.0) {
+    debug.line([-size,     0,     0], [size,    0,    0], new Color(1, 0, 0, opacity));
+    debug.line([    0, -size,     0], [   0, size,    0], new Color(0, 1, 0, opacity));
+    debug.line([    0,     0, -size], [   0,    0, size], new Color(0, 0, 1, opacity));
+}
+
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
     engine.renderer.performance.fps = 0.0;
@@ -634,6 +686,10 @@ function sceneTest() {
     let shader = new ShaderSource("TestShader",
         document.getElementById("test-shader").innerHTML);
 
+    let debugShader = new ShaderSource("DebugShader",
+        document.getElementById("debug-shader").innerHTML
+    );
+
     let material = new Material();
     material.shader = shader;
     material.enableDefine("NORMALS");
@@ -641,6 +697,7 @@ function sceneTest() {
 
     engine.resources.addBuiltinResource("DefaultMaterial", material);
     engine.resources.addBuiltinResource("ColorCube", mesh);
+    engine.resources.addBuiltinResource("DebugShader", debugShader);
 	
     engine.resources.onAllLoaded(function() {
 
@@ -692,6 +749,9 @@ function sceneTest() {
         model.material = m;
         model.materials[1] = m;
     });
+
+    let debug = new DebugRenderer(engine.gl);
+    debug._shader = debugShader;
 	
     let cubeNode = scene.createChild("Cube");
 
@@ -751,6 +811,15 @@ function sceneTest() {
 
         engine.renderer.resetPerformance();
         engine.renderer.renderScene(scene, camera);
+
+        debug.line(lightRotator.worldPosition, lightNode.worldPosition, Color.yellow);
+        debug.circle([0, 0, 0], 3, vec3.left, Color.magenta);
+        debug.circle([0, 0, 0], 3, vec3.forward, Color.cyan);
+
+        drawOriginAxes(debug, 200, 0.5);
+
+        engine.renderer.renderDebugLines(debug, camera);
+        debug.clear();
 
         engine.renderer.performance.fps = engine.renderer.performance.fps * 0.99 + fps * 0.01;
         engine.renderer.performance.objects = scene.nodes.size;
