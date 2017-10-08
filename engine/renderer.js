@@ -549,10 +549,9 @@
             if (index === null) {
                 return;
             }
-
             gl.activeTexture(GetTextureSlotEnum(gl, index));
             gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-            gl.uniform1i(textureLocations[name], 0);
+            gl.uniform1i(textureLocations[name], index);
         }
 
         /**
