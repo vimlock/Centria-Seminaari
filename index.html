@@ -812,9 +812,9 @@ function sceneTest() {
         engine.renderer.resetPerformance();
         engine.renderer.renderScene(scene, camera);
 
-        debug.line(lightRotator.worldPosition, lightNode.worldPosition, Color.yellow);
-        debug.circle([0, 0, 0], 3, vec3.left, Color.magenta);
-        debug.circle([0, 0, 0], 3, vec3.forward, Color.cyan);
+        debug.dottedCircle([0, 0, 0], 3, vec3.left, Color.magenta);
+
+        debug.dottedCircle(lightNode.worldPosition, 1.0, vec3.left, Color.yellow);
 
         drawOriginAxes(debug, 200, 0.5);
 

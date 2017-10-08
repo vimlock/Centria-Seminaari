@@ -73,6 +73,40 @@ class DebugRenderer {
         }
     }
 
+    dottedCircle(center, radius, normal, color, filled=false, segments=32) {
+        if (segments < 3)
+            return;
+
+        let q = Quaternion.fromRotation(vec3.up, normal);
+        let mat = q.toMat3();
+
+        let step = (Math.PI * 2.0) / segments;
+        let previous = null;
+
+        for (let i = 0; i <= segments; ++i) {
+            let current = [
+                Math.sin(step * i),
+                Math.cos(step * i),
+                0
+            ];
+
+            current = mat3.multiplyVector(mat, current);
+            current = [
+                center[0] + current[0] * radius,
+                center[1] + current[1] * radius,
+                center[2] + current[2] * radius,
+            ];
+
+            if (previous) {
+                this._addLine(previous, current, color, color);
+                previous = null;
+            }
+            else {
+                previous = current;
+            }
+        }
+    }
+
     sphere(center, radius, color, rings=8, sectors=8) {
     }
 
