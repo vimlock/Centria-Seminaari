@@ -611,7 +611,12 @@ function sceneTest() {
     engine.resources.queueForLoading(Texture, "data/textures/CubeDiffuse.png");
     engine.resources.queueForLoading(Texture, "data/textures/CubeNormal.png");
     engine.resources.queueForLoading(Texture, "data/textures/CubeSpecular.png");
-
+    
+    
+    // Debug loading model without uv coordinates
+    engine.resources.queueForLoading(Mesh, "data/models/ThreeMaterialCube.obj");
+    
+    
     let scene = new Scene();
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
     scene.fogColor = new Color(0.15, 0.15, 0.15, 1.0);
