@@ -1,4 +1,4 @@
-/* global engine, Geometry, Resource */
+/* global engine, Geometry, Resource, vec3 */
 "use strict";
 
 (function(context) {
@@ -77,10 +77,22 @@
                 ];
             } else {
                 geometries = geometries.map(function(g) {
-                    return new Geometry(g.offset, g.indCount, null)
+                    return new Geometry(g.offset, g.indCount, null);
                 });
             }
-            
+
+            for (let geom of geometries) {
+                if (geom.indexOffset < 0 || geom.indexCount < 0) {
+                    console.log("Geometry out of range");
+                    break;
+                }
+
+                if (geom.indexOffset + geom.indexCount > indices.length) {
+                    console.log("Geometry out of range");
+                    break;
+                }
+            }
+
             let gl = engine.gl;
             // Upload the vertices to the gpu
             let vb = gl.createBuffer();
@@ -164,14 +176,14 @@
             for(let i = 0; i < indices.length; i++) {
                 iCount++;
                 if(/usemtl (?:\w+)\s/.test(indices[i])) {
-                    geometries.push({ offset: offset > 0 ? offset * 3 + 1 : 0, indCount: (iCount - 1) * 3 });
+                    geometries.push({ offset: offset === 0 ? offset : offset + 1, indCount: (iCount - 1) * 3 });
                     indices.splice(i, 1);
                     offset = i;
                     iCount = 0;
                     i--;
                 }
             }
-            geometries.push({ offset: offset > 0 ? offset * 3 + 1 : 0, indCount: iCount * 3 });
+            geometries.push({ offset: offset > 0 ? offset * 3 : 0, indCount: iCount * 3 });
             indices = indices.join("");
             
             vertices   = vertices.match(/-?\d\.\d*/g).map(parseFloat);
@@ -250,7 +262,7 @@
         static buildMesh(positions, uvs, normals, indices, tangents, bitangents, geometries) {
 
             if ((positions.length % 3) != 0) {
-                console.log("Vertex attribute lengths not multiply of 3");
+                console.log("Vertex attribute lengths not a multiple of 3");
                 return null;
             }
 
@@ -283,6 +295,13 @@
             }
 
             let iBuff = new Uint16Array(indices);
+
+            for (let i = 0; i < indices.length; ++i) {
+                if (indices[i] > vCount) {
+                    console.log("Index out of range");
+                    break;
+                }
+            }
 
             let attrs = [
                 new context.MeshAttribute("position", 0, 3),

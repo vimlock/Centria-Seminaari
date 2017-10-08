@@ -321,6 +321,13 @@
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
                     continue;
 
+                if (this.activeMesh.indexCount < geo.indexOffset + geo.indexCount) {
+                    console.log("Geometry indices out of range");
+                    console.log(mesh);
+                    console.log(geo);
+                    debugger;
+                }
+
                 this.performance.vertices += geo.indexCount * batch.transforms.length;
 
                 if (instanced) {
@@ -328,6 +335,13 @@
                 }
                 else {
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
+                }
+
+                if (gl.getError()) {
+                    console.log("Error rendering geometry");
+                    console.log(mesh);
+                    console.log(geo);
+                    debugger;
                 }
             }
         }
@@ -344,7 +358,7 @@
             for (let t of batch.transforms) {
                 this._bindTransform(t);
 
-                gl.drawElements(drawType, indexCount, indexType, indexOffset);
+                gl.drawElements(drawType, indexCount, indexType, indexOffset * 2);
 
                 this.performance.numDrawCalls++;
             }
@@ -396,7 +410,7 @@
                     gl.bufferSubData(gl.ARRAY_BUFFER, 0, sub);
 
                     // Finally, it's draw time.
-                    gl.drawElementsInstanced(drawType, indexCount, indexType, indexOffset, instanceNum);
+                    gl.drawElementsInstanced(drawType, indexCount, indexType, indexOffset * 2, instanceNum);
 
                     this.performance.numDrawCalls++;
                     instanceNum = 0;
@@ -459,6 +473,12 @@
             gl.uniform4fv(uniforms.ambientColor, cam.node.scene.ambientColor.toArray());
             gl.uniform3fv(uniforms.viewForward, cam.node.forward);
             gl.uniform3fv(uniforms.viewPosition, cam.node.worldPosition);
+
+            let scene = cam.node.scene;
+            let fogColor = scene.fogColor.toArray();
+
+            gl.uniform3f(uniforms.fogColor, fogColor[0], fogColor[1], fogColor[2]);
+            gl.uniform2f(uniforms.fogParams, scene.fogStart, scene.fogStart + scene.fogDistance);
         }
 
         /**
@@ -497,6 +517,10 @@
 
             let attribOffsets = this.activeShader.attribLocations;
 
+            for (let i = 0; i < 10; i++) {
+                gl.disableVertexAttribArray(i);
+            }
+
             mesh.attributes.forEach(function(attrib) {
                 let index = attribOffsets[attrib.name];
 
@@ -525,10 +549,9 @@
             if (index === null) {
                 return;
             }
-
             gl.activeTexture(GetTextureSlotEnum(gl, index));
             gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-            gl.uniform1i(textureLocations[name], 0);
+            gl.uniform1i(textureLocations[name], index);
         }
 
         /**
@@ -710,6 +733,9 @@
                 viewProjectionMatrix: gl.getUniformLocation(program, "uViewProjectionMatrix"),
 
                 projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
+
+                fogParams: gl.getUniformLocation(program, "uFogParams"),
+                fogColor: gl.getUniformLocation(program, "uFogColor"),
             };
 
             prog.textureLocations = {
@@ -734,12 +760,13 @@
                 color: gl.getAttribLocation(program, "iColor"),
                 texCoord: gl.getAttribLocation(program, "iTexCoord"),
                 normal: gl.getAttribLocation(program, "iNormal"),
+                tangent: gl.getAttribLocation(program, "iTangent"),
+                bitangent: gl.getAttribLocation(program, "iBitangent"),
                 instanceModelMatrix: gl.getAttribLocation(program, "iInstanceModelMatrix"),
             };
 
             prog.updateKey();
 
-            /*
             let uniforms = Object.entries(prog.uniformLocations).
                 filter(x => x[1] != null).
                 map(x => x[0]).
@@ -747,6 +774,7 @@
 
             console.log("uniforms " + uniforms);
 
+            /*
             prog.lightUniformLocations.forEach(function(value, index) {
                 Object.keys(prog.uniformLocations).forEach(function(key) {
                     if (prog.lightUniformLocations[index][key]) {
@@ -756,9 +784,11 @@
             });
             */
 
+            /*
             Object.keys(prog.attribLocations).forEach(function(key) {
                 console.log("attrib " + key + " at " + prog.attribLocations[key]);
             });
+            */
 
             return prog;
         }

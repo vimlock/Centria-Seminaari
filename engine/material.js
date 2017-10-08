@@ -3,7 +3,6 @@
 
 (function(context) {
     context.Material = class Material extends Resource {
-
         constructor() {
             super();
 
@@ -49,7 +48,52 @@
             /// vec4 [number, number, number, number]
             this.shaderUniforms = new Map();
 
+            /// List of shader defines to pass for shader
+            /// You should not access this directly.
             this.defines = new Map();
+        }
+
+        /**
+         * Enables a preprocessing directive for the shader
+         *
+         * Note that you should not set builtin defines like INSTANCING.
+         *
+         * @param name {string} Name of the define.
+         * @param value {string|null} Optional value to map the define as.
+         */
+        enableDefine(name, value=null) {
+            this.defines.set(name, value);
+        }
+
+        /**
+         * Disables a preprocessing directive for the shader.
+         * Note that this won't disable builtin defines like INSTANCING.
+         */
+        disableDefine(name) {
+            this.defines.delete(name);
+        }
+
+        /**
+         * Utility function to enable an array  of defines.
+         * Downside is the defines cant have values.
+         *
+         * @param names {Array.<string>} Array of defines to enable.
+         */
+        enableDefines(names) {
+            for (let name of names) {
+                this.enableDefine(name);
+            }
+        }
+
+        /**
+         * Utility function to disable an array of defines.
+         *
+         * @param names {Array.<string>} Array of defines to disable.
+         */
+        disableDefines(names) {
+            for (let name of names) {
+                this.disableDefine(name);
+            }
         }
     };
 
