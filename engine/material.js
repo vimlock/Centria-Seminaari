@@ -18,7 +18,7 @@
             this.opaque = true;
 
             /// Which faces to cull during rendering
-            this.cullFaces = "back";
+            this.cullFaces = true;
 
             /// Should this material use Z rejection?
             this.depthTest = true;

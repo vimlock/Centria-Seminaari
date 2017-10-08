@@ -659,9 +659,11 @@ function sceneTest() {
         ]);
 
         m.opaque = false;
-        m.blendMode = "alpha";
+        m.blendMode = "add";
         m.depthWrite = false;
-        m.diffuseColor.a = 0.1;
+        m.cullFaces = false;
+
+        m.diffuseColor.a = 0.9;
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
             m, 100);

@@ -598,6 +598,13 @@
                 gl.depthMask(false);
             }
 
+            if (material.cullFaces) {
+                gl.enable(gl.CULL_FACE);
+            }
+            else {
+                gl.disable(gl.CULL_FACE);
+            }
+
             if (material.blendMode === "alpha") {
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
