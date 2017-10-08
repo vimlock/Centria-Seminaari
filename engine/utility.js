@@ -1,4 +1,14 @@
 (function() {
+
+    this.mat3 = {
+        multiplyVector(m, v) {
+            return [
+                m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
+                m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
+                m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
+            ];
+        }
+    }
 	
 	
 	//  Holds all function that return 16 cell arrays (4x4, 3d matrices)
@@ -297,7 +307,14 @@
 			var len = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 			return len > 0 ? [ v[0] / len, v[1] / len, v[2] / len ] : [ 0.0, 0.0, 0.0 ];
 		},
-		
+
+        dot: function(a, b) {
+            return (
+                a[0] * b[0] +
+                a[1] * b[1] +
+                a[2] * b[2]
+            );
+        },
 		
 		cross: function(a, b) {
 			return [

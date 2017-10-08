@@ -1,5 +1,7 @@
 "use strict";
 
+/* global vec3 */
+
 (function(context) {
 
     context.Quaternion = class Quaternion
@@ -35,7 +37,20 @@
 				xz - wy,       yz + wx,       1 - (xx + yy), 0,
 				0,             0,             0,             1 ];
         }
-        
+
+        toMat3() {
+			let x = this.x,  y = this.y,  z = this.z,  w = this.w;
+			let x2 = x + x,  y2 = y + y,  z2 = z + z;
+			let xx = x * x2, xy = x * y2, xz = x * z2;
+			let yy = y * y2, yz = y * z2, zz = z * z2;
+			let wx = w * x2, wy = w * y2, wz = w * z2;
+			
+			return [
+				1 - (yy + zz), xy - wz,       xz + wy,     
+				xy + wz,       1 - (xx + zz), yz - wx,      
+				xz - wy,       yz + wx,       1 - (xx + yy),
+            ];
+        }
         
         toEuler() {
             // TODO
@@ -102,8 +117,24 @@
                     0.25 * s);
 			}
         }
-        
-		
+
+        static fromRotation(v1, v2) {
+            // https://stackoverflow.com/a/1171995
+            
+            let half = vec3.normalize(vec3.add(v1, v2));
+            
+            let axis = vec3.cross(v1, half);
+            let angle = vec3.dot(v1, half);
+
+            let q = new Quaternion(
+                angle, axis[0], axis[1], axis[2]
+            );
+
+            q.normalize();
+
+            return q;
+        }
+
 		length() {
 			return Math.sqrt(this.w * this.w + this.x * this.x + this.y * this.y + this.z * this.z);
 		}
