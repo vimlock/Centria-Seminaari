@@ -658,6 +658,11 @@ function sceneTest() {
             ["diffuseMap", t]
         ]);
 
+        m.opaque = false;
+        m.blendMode = "alpha";
+        m.depthWrite = false;
+        m.diffuseColor.a = 0.1;
+
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
             m, 100);
 
@@ -673,7 +678,7 @@ function sceneTest() {
         m.shader = shader;
 
         m.enableDefine("LIGHTS");
-        // m.enableDefine("DIFFUSEMAP");
+        m.enableDefine("DIFFUSEMAP");
         m.enableDefine("NORMALS");
         m.enableDefine("NORMALMAP");
 

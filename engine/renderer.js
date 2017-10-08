@@ -583,6 +583,36 @@
             for (let [name, texture] of material.textures.entries()) {
                 this._bindTexture(name, texture);
             }
+
+            if (material.depthTest) {
+                gl.enable(gl.DEPTH_TEST);
+            }
+            else {
+                gl.disable(gl.DEPTH_TEST);
+            }
+
+            if (material.depthWrite) {
+                gl.depthMask(true);
+            }
+            else {
+                gl.depthMask(false);
+            }
+
+            if (material.blendMode === "alpha") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            }
+            else if (material.blendMode === "add") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+            }
+            else if (material.blendMode === "multiply") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA);
+            }
+            else {
+                gl.disable(gl.BLEND);
+            }
         }
 
         _bindShader(shaderProgram) {
