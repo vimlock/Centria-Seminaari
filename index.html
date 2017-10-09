@@ -24,6 +24,7 @@
 		<script src="engine/camera.js"></script>
 		<script src="engine/light.js"></script>
 		<script src="engine/model.js"></script>
+		<script src="engine/environmentmap.js"></script>
 
 		<script src="engine/resource.js"></script>
 		<script src="engine/mesh.js"></script>
@@ -35,6 +36,7 @@
 		<script src="engine/webgl.js"></script>
 		<script src="engine/shader.js"></script>
 		<script src="engine/debug.js"></script>
+		<script src="engine/renderview.js"></script>
 		<script src="engine/renderer.js"></script>
 		<script src="engine/material.js"></script>
 		<script src="engine/model.js"></script>
@@ -795,6 +797,14 @@ function sceneTest() {
     light.color = new Color(1.0, 0.1, 0.1, 1.2);
     */
 
+    let envmapNode = scene.createChild("EnvironmentMap");
+    envmapNode.createComponent(EnvironmentMap);
+
+    let envMaps = scene.getAllComponents(EnvironmentMap);
+    envMaps.forEach(function(env, index) {
+        console.log("Building environment map " + index + "/" + envMaps.length);
+    });
+
     let prevFrameTime = Date.now();
 
     requestAnimationFrame(function update() {
@@ -812,8 +822,10 @@ function sceneTest() {
         scene.update();
         updateCamera(camNode, timeDelta);
 
+        let renderView = RenderView.fromCamera(camera);
+
         engine.renderer.resetPerformance();
-        engine.renderer.renderScene(scene, camera);
+        engine.renderer.renderScene(scene, renderView);
 
         debug.dottedCircle([0, 0, 0], 3, vec3.left, Color.magenta);
         debug.cube([0, 0, 0], 5, Color.green, true);
@@ -821,7 +833,7 @@ function sceneTest() {
 
         drawOriginAxes(debug, 200, 0.5);
 
-        engine.renderer.renderDebugLines(debug, camera);
+        engine.renderer.renderDebugLines(renderView, debug);
         debug.clear();
 
         engine.renderer.performance.fps = engine.renderer.performance.fps * 0.99 + fps * 0.01;

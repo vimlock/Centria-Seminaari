@@ -1,4 +1,4 @@
-/* global buildShaderKey, Camera, Color, Light, Material, Model, ShaderProgram, mat4, vec3 */
+/* global buildShaderKey, Color, Light, Material, Model, ShaderProgram, mat4, vec3 */
 "use strict";
 
 (function(context) {
@@ -108,13 +108,14 @@
         /**
          * Draws a scene to the default viewport
          *
-         * If camera is defined, it will be used instead of the scenes
-         * own camera.
-         *
          * If shaderOverride is defined, it will used instead of the
          * materials own shader.
+         *
+         * @param scene {Scene} The Scene to use for rendering .
+         * @param renderView {RenderView} The window into the scene.
+         * @param shaderOverride {ShaderSource} Shader to override materials own shader with.
          */
-        renderScene(scene, camera, shaderOverride) {
+        renderScene(scene, renderView, shaderOverride) {
             // Prepare scene for rendering
             
             let lights = [];
@@ -154,26 +155,16 @@
                         }
                     });
                 }
-
-                // Pick a camera, if we have not found one yet
-                if (!camera) {
-                    camera = node.getComponent(Camera);
-                }
             });
 
-
-            if (!camera) {
-                console.log("No camera found to render scene with");
-                return;
-            }
-
             // Calculate light priorities for culling
-            let camPosition = camera.node.worldPosition;
+            let camPosition = renderView.position;
+
             for (let l of lights) {
                 l.priority = vec3.distanceSquared(mat4.getTranslation(l.transform), camPosition) * l.intensity;
             }
 
-            this._cullLights(camera, lights, MAX_LIGHTS);
+            this._cullLights(lights, MAX_LIGHTS);
 
             let gl = this.glContext;
             gl.clearColor( ...scene.background.toArray());
@@ -186,11 +177,11 @@
             
             this.performance.numLights += lights.length;
             
-            this._renderPass(camera, lights, opaqueGeomBatches, shaderOverride);
-            this._renderPass(camera, lights, transparentGeomBatches, shaderOverride);
+            this._renderPass(scene, renderView, lights, opaqueGeomBatches, shaderOverride);
+            this._renderPass(scene, renderView, lights, transparentGeomBatches, shaderOverride);
         }
 
-        renderDebugLines(debugRenderer, camera) {
+        renderDebugLines(renderView, debugRenderer) {
 
             if (debugRenderer._nextVertexIndex <= 0) {
                 return;
@@ -210,7 +201,7 @@
 
             debugRenderer.updateBuffers();
 
-            this._bindCamera(camera);
+            this._bindRenderView(renderView);
 
             let gl = this.glContext;
 
@@ -281,11 +272,10 @@
         /**
          * Limits the number of batches to maxBatches.
          *
-         * @param camera {Camera} The camera to for culling.
          * @param lightBatches {Array.<Light>} The Lights which are to be culled.
          * @param maxLights Light limit.
          */
-        _cullLights(camera, lights, maxLights) {
+        _cullLights(lights, maxLights) {
 
             // Some sanity checking, shaders wont supports any more than this
             if (maxLights > 8)
@@ -305,12 +295,18 @@
 
         /**
          * Renders given geometries to the default viewport using the
-         * given lights and camera.
+         * given lights and renderView.
          *
          * If shaderOverride is defined, it will used instead of the
          * materials own shader.
+         *
+         * @param scene {Scene} Scene to render.
+         * @param renderView {RenderView} RenderView to use
+         * @param lights {Array.<LightBatch> Lights to use
+         * @param batches {Array.<GeometryBatch> Geometries to use.
+         * @param shaderOverride {ShaderSource} Shader to override materials own shader with.
          */
-        _renderPass(camera, lights, batches, _shaderOverride) {
+        _renderPass(scene, renderView, lights, batches, _shaderOverride) {
             // TODO: pick the closest and most brighest lights and upload them as uniforms
 
             // TODO: Maybe add instancing support? Might be out of scope
@@ -318,7 +314,6 @@
             
             this.activeMaterial = null;
             this.activeShader = null;
-            this.activeCamera = null;
             this.activeMesh = null;
             
             let gl = this.glContext;
@@ -365,7 +360,8 @@
                 }
 
                 this._bindMesh(mesh);
-                this._bindCamera(camera);
+                this._bindRenderView(renderView);
+                this._bindScene(scene);
                 this._bindLights(lights);
 
                 if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
@@ -505,28 +501,33 @@
 
         /**
          * Should be called after binding the shader.
-         * Sets the camera uniforms in the shader.
+         * Sets the view uniforms in the shader.
          */
-        _bindCamera(cam) {
+        _bindRenderView(renderView) {
             let uniforms = this.activeShader.uniformLocations;
             let gl = this.glContext;
 
-            this.activeCamera = cam;
+            this.renderView = renderView;
 
-            this.cameraViewMatrix = cam.node.worldTransform;
-            this.cameraProjectionMatrix = cam.projectionMatrix;
+            gl.uniformMatrix4fv(uniforms.viewMatrix, false, renderView.viewMatrix);
+            gl.uniformMatrix4fv(uniforms.projectionMatrix, false, renderView.projectionMatrix);
+            gl.uniformMatrix4fv(uniforms.inverseViewMatrix, false, renderView.inverseViewMatrix);
+            gl.uniformMatrix4fv(uniforms.viewProjectionMatrix, false, renderView.viewProjectionMatrix);
 
-            gl.uniformMatrix4fv(uniforms.viewMatrix, false, this.cameraViewMatrix);
-            gl.uniformMatrix4fv(uniforms.projectionMatrix, false, this.cameraProjectionMatrix);
-            gl.uniformMatrix4fv(uniforms.inverseViewMatrix, false, mat4.invert(this.cameraViewMatrix));
-            gl.uniformMatrix4fv(uniforms.viewProjectionMatrix, false,
-                mat4.multiply(this.cameraProjectionMatrix, this.cameraViewMatrix));
+            gl.uniform3fv(uniforms.viewForward, renderView.forward);
+            gl.uniform3fv(uniforms.viewPosition, renderView.position);
+        }
 
-            gl.uniform4fv(uniforms.ambientColor, cam.node.scene.ambientColor.toArray());
-            gl.uniform3fv(uniforms.viewForward, cam.node.forward);
-            gl.uniform3fv(uniforms.viewPosition, cam.node.worldPosition);
+        /**
+         * Should be called after binding the shader.
+         * Sets the scene wide uniforms
+         */
+        _bindScene(scene) {
+            let uniforms = this.activeShader.uniformLocations;
+            let gl = this.glContext;
 
-            let scene = cam.node.scene;
+            gl.uniform4fv(uniforms.ambientColor, scene.ambientColor.toArray());
+
             let fogColor = scene.fogColor.toArray();
 
             gl.uniform3f(uniforms.fogColor, fogColor[0], fogColor[1], fogColor[2]);
@@ -543,10 +544,7 @@
 
             this.performance.bindTransform++;
 
-            let m = mat4.multiply(this.cameraViewMatrix, transform);
-            // let m = mat4.multiply(transform, this.cameraViewMatrix);
-
-            // console.log(m);
+            let m = mat4.multiply(this.renderView.viewMatrix, transform);
 
             gl.uniformMatrix4fv(uniforms.modelViewMatrix, false, m);
             gl.uniformMatrix4fv(uniforms.modelMatrix, false, transform);

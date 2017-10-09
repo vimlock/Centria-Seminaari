@@ -32,6 +32,9 @@
             /// Should the renderer be allowed use instancing when rendering?
             this.allowInstancing = true;
 
+            /// Should the material receive reflections from environment?
+            this.allowReflections = true;
+
             /// Which shader to use?
             this.shader = null;
             this.drawType = "triangles"; // points|triangles
