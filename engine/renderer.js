@@ -225,7 +225,7 @@
 
             // Draw faces
             if (debugRenderer._nextFaceIndex > 0) {
-                gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 0.1);
+                gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 0.05);
 
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._faceIb);
                 gl.drawElements(gl.TRIANGLES, debugRenderer._nextFaceIndex, gl.UNSIGNED_SHORT, 0);
