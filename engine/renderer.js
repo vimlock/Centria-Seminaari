@@ -387,12 +387,14 @@
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
 
+                /*
                 if (gl.getError()) {
                     console.log("Error rendering geometry");
                     console.log(mesh);
                     console.log(geo);
                     debugger;
                 }
+                */
             }
         }
 
