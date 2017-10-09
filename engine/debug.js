@@ -1,301 +1,301 @@
 /* exported DebugRenderer */
-/* global mat3, vec3 */
+/* global mat3, vec3, Quaternion */
 
 "use strict";
 
-class DebugRenderer {
+(function(context) {
 
-    /*
-     * Debug vertex looks like this:
-     *
-     * position: vec3
-     * color: vec4:
-     *
-     */
-    
-    constructor(glContext, maxLines=500) {
-        this._glContext = glContext;
+    let cubeLines = [
+        0, 1,  1, 2,  2, 3,  3, 0,
 
-        this._vertexSize = 7; // sizeof(position + color)
-        this._maxLines = maxLines;
+        4, 5,  5, 6,  6, 7,  7, 4,
 
-        this._vertices = new Float32Array(maxLines * this._vertexSize);
+        0, 4,  1, 5,  2, 6,  3, 7,
+    ];
 
-        this._lineIndices = new Uint16Array(maxLines * 2);
-        this._faceIndices = new Uint16Array(maxLines * 2);
+    let cubeFaces = [
+        // front
+        0, 1, 2,  0, 2, 3,
 
-        this._nextVertexIndex = 0;
-        this._nextFaceIndex = 0;
-        this._nextLineIndex = 0;
+        // back
+        4, 5, 6,  4, 6, 7,
 
-        this._vbo = null;
-        this._lineIb = null;
-        this._faceIb = null;
+        // Bottom
+        0, 4, 5,  0, 5, 1,
 
-        this._shader = null;
+        // Top
+        2, 3, 6,  6, 7, 3,
 
-        this._initBuffers();
-    }
+        // Left
+        0, 3, 4,  4, 3, 7,
 
-    line(start, end, color) {
-        this._addLine(start, end, color, color);
-    }
+        // Right
+        1, 5, 6,  6, 2, 1
+    ];
 
-    circle(center, radius, normal, color, filled=false, segments=32) {
-        if (segments < 3)
-            return;
 
-        let q = Quaternion.fromRotation(vec3.up, normal);
-        let mat = q.toMat3();
+    context.DebugRenderer = class DebugRenderer {
 
-        let step = (Math.PI * 2.0) / segments;
-        let previous = null;
+        /*
+         * Debug vertex looks like this:
+         *
+         * position: vec3
+         * color: vec4:
+         *
+         */
+        
+        constructor(glContext, maxLines=500) {
+            this._glContext = glContext;
 
-        for (let i = 0; i <= segments; ++i) {
-            let current = [
-                Math.sin(step * i),
-                Math.cos(step * i),
-                0
-            ];
+            this._vertexSize = 7; // sizeof(position + color)
+            this._maxLines = maxLines;
 
-            current = mat3.multiplyVector(mat, current);
-            current = [
-                center[0] + current[0] * radius,
-                center[1] + current[1] * radius,
-                center[2] + current[2] * radius,
-            ];
+            this._vertices = new Float32Array(maxLines * this._vertexSize);
 
-            if (previous) {
-                this._addLine(previous, current, color, color);
-            }
+            this._lineIndices = new Uint16Array(maxLines * 2);
+            this._faceIndices = new Uint16Array(maxLines * 2);
 
-            previous = current;
+            this._nextVertexIndex = 0;
+            this._nextFaceIndex = 0;
+            this._nextLineIndex = 0;
+
+            this._vbo = null;
+            this._lineIb = null;
+            this._faceIb = null;
+
+            this._shader = null;
+
+            this._initBuffers();
         }
-    }
 
-    dottedCircle(center, radius, normal, color, filled=false, segments=32) {
-        if (segments < 3)
-            return;
+        line(start, end, color) {
+            this._addLine(start, end, color, color);
+        }
 
-        let q = Quaternion.fromRotation(vec3.up, normal);
-        let mat = q.toMat3();
+        circle(center, radius, normal, color, filled=false, segments=32) {
+            if (segments < 3)
+                return;
 
-        let step = (Math.PI * 2.0) / segments;
-        let previous = null;
+            let q = Quaternion.fromRotation(vec3.up, normal);
+            let mat = q.toMat3();
 
-        for (let i = 0; i <= segments; ++i) {
-            let current = [
-                Math.sin(step * i),
-                Math.cos(step * i),
-                0
-            ];
+            let step = (Math.PI * 2.0) / segments;
+            let previous = null;
 
-            current = mat3.multiplyVector(mat, current);
-            current = [
-                center[0] + current[0] * radius,
-                center[1] + current[1] * radius,
-                center[2] + current[2] * radius,
-            ];
+            for (let i = 0; i <= segments; ++i) {
+                let current = [
+                    Math.sin(step * i),
+                    Math.cos(step * i),
+                    0
+                ];
 
-            if (previous) {
-                this._addLine(previous, current, color, color);
-                previous = null;
-            }
-            else {
+                current = mat3.multiplyVector(mat, current);
+                current = [
+                    center[0] + current[0] * radius,
+                    center[1] + current[1] * radius,
+                    center[2] + current[2] * radius,
+                ];
+
+                if (previous) {
+                    this._addLine(previous, current, color, color);
+                }
+
                 previous = current;
             }
         }
-    }
 
-    cube(center, radius, color, filled=false) {
-        let half = radius * 0.5;
+        dottedCircle(center, radius, normal, color, segments=32) {
+            if (segments < 3)
+                return;
 
-        let vertexOffset = this._nextVertexIndex;
-        let lineOffset = this._nextLineIndex;
-        let faceOffset = this._nextFaceIndex;
+            let q = Quaternion.fromRotation(vec3.up, normal);
+            let mat = q.toMat3();
 
-        this._addVertex(vec3.add(center, [-half, -half, -half]), color);
-        this._addVertex(vec3.add(center, [ half, -half, -half]), color);
-        this._addVertex(vec3.add(center, [ half,  half, -half]), color);
-        this._addVertex(vec3.add(center, [-half,  half, -half]), color);
+            let step = (Math.PI * 2.0) / segments;
+            let previous = null;
 
-        this._addVertex(vec3.add(center, [-half, -half,  half]), color);
-        this._addVertex(vec3.add(center, [ half, -half,  half]), color);
-        this._addVertex(vec3.add(center, [ half,  half,  half]), color);
-        this._addVertex(vec3.add(center, [-half,  half,  half]), color);
+            for (let i = 0; i <= segments; ++i) {
+                let current = [
+                    Math.sin(step * i),
+                    Math.cos(step * i),
+                    0
+                ];
 
-        let lines = [
-            0, 1,  1, 2,  2, 3,  3, 0,
+                current = mat3.multiplyVector(mat, current);
+                current = [
+                    center[0] + current[0] * radius,
+                    center[1] + current[1] * radius,
+                    center[2] + current[2] * radius,
+                ];
 
-            4, 5,  5, 6,  6, 7,  7, 4,
-
-            0, 4,  1, 5,  2, 6,  3, 7,
-        ];
-
-        for (let i = 0; i < lines.length; i += 2) {
-            let start = lines[i + 0];
-            let end = lines[i + 1];
-
-            this._lineIndices[lineOffset + i + 0] = vertexOffset + start;
-            this._lineIndices[lineOffset + i + 1] = vertexOffset + end;
+                if (previous) {
+                    this._addLine(previous, current, color, color);
+                    previous = null;
+                }
+                else {
+                    previous = current;
+                }
+            }
         }
 
-        this._nextLineIndex += lines.length;
+        cube(center, radius, color, filled=false) {
+            let half = radius * 0.5;
 
-        if (filled) {
+            let vertexOffset = this._nextVertexIndex;
+            let lineOffset = this._nextLineIndex;
+            let faceOffset = this._nextFaceIndex;
 
-            // Generated with trial and error, winding order is fucked up
-            let faces = [
-                // front
-                0, 1, 2,  0, 2, 3,
+            this._addVertex(vec3.add(center, [-half, -half, -half]), color);
+            this._addVertex(vec3.add(center, [ half, -half, -half]), color);
+            this._addVertex(vec3.add(center, [ half,  half, -half]), color);
+            this._addVertex(vec3.add(center, [-half,  half, -half]), color);
 
-                // back
-                4, 5, 6,  4, 6, 7,
+            this._addVertex(vec3.add(center, [-half, -half,  half]), color);
+            this._addVertex(vec3.add(center, [ half, -half,  half]), color);
+            this._addVertex(vec3.add(center, [ half,  half,  half]), color);
+            this._addVertex(vec3.add(center, [-half,  half,  half]), color);
 
-                // Bottom
-                0, 4, 5,  0, 5, 1,
-
-                // Top
-                2, 3, 6,  6, 7, 3,
-
-                // Left
-                0, 3, 4,  4, 3, 7,
-
-                // Right
-                1, 5, 6,  6, 2, 1
-            ];
-
-            for (let i = 0; i < faces.length; i += 3) {
-                this._faceIndices[faceOffset + i + 0] = vertexOffset + faces[i + 0];
-                this._faceIndices[faceOffset + i + 1] = vertexOffset + faces[i + 1];
-                this._faceIndices[faceOffset + i + 2] = vertexOffset + faces[i + 2];
+            for (let i = 0; i < cubeLines.length; i += 2) {
+                this._lineIndices[lineOffset + i + 0] = vertexOffset + cubeLines[i + 0];
+                this._lineIndices[lineOffset + i + 1] = vertexOffset + cubeLines[i + 1];
             }
 
-            console.log(this._faceIndices);
+            this._nextLineIndex += cubeLines.length;
 
-            this._nextFaceIndex += faces.length;
-        }
-    }
+            if (filled) {
 
-    sphere(center, radius, color, rings=8, sectors=8) {
-    }
+                // Generated with trial and error, winding order is fucked up
+                for (let i = 0; i < cubeFaces.length; i += 3) {
+                    this._faceIndices[faceOffset + i + 0] = vertexOffset + cubeFaces[i + 0];
+                    this._faceIndices[faceOffset + i + 1] = vertexOffset + cubeFaces[i + 1];
+                    this._faceIndices[faceOffset + i + 2] = vertexOffset + cubeFaces[i + 2];
+                }
 
-    cone(origin, length, radius, color, filled=false, segments=8) {
-    }
-
-    updateBuffers() {
-
-        let gl = this._glContext;
-
-        // Skip the buffer updates if there is not any data to upload there
-
-        if (this._nextVertexIndex > 0) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
-            gl.bufferSubData(gl.ARRAY_BUFFER, 0,
-                this._vertices.subarray(0, this._vertexSize * this._nextVertexIndex)
-            );
-        }
-        
-        if (this._nextFaceIndex > 0) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._faceIb);
-            gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0,
-                this._faceIndices.subarray(0, this._nextFaceIndex)
-            );
+                this._nextFaceIndex += cubeFaces.length;
+            }
         }
 
-        if (this._nextLineIndex > 0) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._lineIb);
-            gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0,
-                this._lineIndices.subarray(0, this._nextLineIndex)
-            );
-        }
-    }
-
-    clear() {
-        this._nextVertexIndex = 0;
-        this._nextFaceIndex = 0;
-        this._nextLineIndex = 0;
-    }
-
-    _addVertex(position, color) {
-        let offset = this._nextVertexIndex * this._vertexSize;
-
-        this._vertices[offset + 0] = position[0];
-        this._vertices[offset + 1] = position[1];
-        this._vertices[offset + 2] = position[2];
-
-        this._vertices[offset + 3] = color.r;
-        this._vertices[offset + 4] = color.g;
-        this._vertices[offset + 5] = color.b;
-        this._vertices[offset + 6] = color.a;
-
-        this._nextVertexIndex++;
-    }
-
-    _addLine(start, end, startColor, endColor) {
-        if (!endColor) {
-            endColor = startColor;
+        sphere(center, radius, color, rings=8, sectors=8) {
         }
 
-        if (this._nextVertexIndex + 2 >= this._maxLines * 2) {
-            console.log("Debug line max count reached");
-            return;
+        cone(origin, length, radius, color, filled=false, segments=8) {
         }
 
-        this._lineIndices[this._nextLineIndex + 0] = this._nextVertexIndex + 0;
-        this._lineIndices[this._nextLineIndex + 1] = this._nextVertexIndex + 1;
-        this._nextLineIndex += 2;
+        updateBuffers() {
 
-        let offset = this._nextVertexIndex * this._vertexSize;
+            let gl = this._glContext;
 
-        this._vertices[offset + 0] = start[0];
-        this._vertices[offset + 1] = start[1];
-        this._vertices[offset + 2] = start[2];
+            // Skip the buffer updates if there is not any data to upload there
 
-        this._vertices[offset + 3] = startColor.r;
-        this._vertices[offset + 4] = startColor.g;
-        this._vertices[offset + 5] = startColor.b;
-        this._vertices[offset + 6] = startColor.a;
+            if (this._nextVertexIndex > 0) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, this._vbo);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0,
+                    this._vertices.subarray(0, this._vertexSize * this._nextVertexIndex)
+                );
+            }
+            
+            if (this._nextFaceIndex > 0) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._faceIb);
+                gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0,
+                    this._faceIndices.subarray(0, this._nextFaceIndex)
+                );
+            }
 
-        this._nextVertexIndex++;
+            if (this._nextLineIndex > 0) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._lineIb);
+                gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0,
+                    this._lineIndices.subarray(0, this._nextLineIndex)
+                );
+            }
+        }
 
-        offset = this._nextVertexIndex * this._vertexSize;
-        this._vertices[offset + 0] = end[0];
-        this._vertices[offset + 1] = end[1];
-        this._vertices[offset + 2] = end[2];
+        clear() {
+            this._nextVertexIndex = 0;
+            this._nextFaceIndex = 0;
+            this._nextLineIndex = 0;
+        }
 
-        this._vertices[offset + 3] = endColor.r;
-        this._vertices[offset + 4] = endColor.g;
-        this._vertices[offset + 5] = endColor.b;
-        this._vertices[offset + 6] = endColor.a;
+        _addVertex(position, color) {
+            let offset = this._nextVertexIndex * this._vertexSize;
 
-        this._nextVertexIndex++;
-    }
+            this._vertices[offset + 0] = position[0];
+            this._vertices[offset + 1] = position[1];
+            this._vertices[offset + 2] = position[2];
 
-    _initBuffers() {
-        let gl = this._glContext;
+            this._vertices[offset + 3] = color.r;
+            this._vertices[offset + 4] = color.g;
+            this._vertices[offset + 5] = color.b;
+            this._vertices[offset + 6] = color.a;
 
-        let vb = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vb);
-        gl.bufferData(gl.ARRAY_BUFFER, this._vertexSize * this._maxLines * 4, gl.STREAM_DRAW);
+            this._nextVertexIndex++;
+        }
 
-        // maxLines * sizeof(uint16) * vertices_per_line
-        //
-        // Well this is actually not enough for face index buffer
-        // Because faces with more than 3 vertices take up more indices than lines.
-        // But it's close enough.
-        let ibSize = this._maxLines * 2 * 2;
+        _addLine(start, end, startColor, endColor) {
+            if (!endColor) {
+                endColor = startColor;
+            }
 
-        let lineIb = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, lineIb);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ibSize, gl.STREAM_DRAW);
+            if (this._nextVertexIndex + 2 >= this._maxLines * 2) {
+                console.log("Debug line max count reached");
+                return;
+            }
 
-        let faceIb = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, faceIb);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ibSize, gl.STREAM_DRAW);
+            this._lineIndices[this._nextLineIndex + 0] = this._nextVertexIndex + 0;
+            this._lineIndices[this._nextLineIndex + 1] = this._nextVertexIndex + 1;
+            this._nextLineIndex += 2;
 
-        this._vbo = vb;
-        this._lineIb = lineIb;
-        this._faceIb = faceIb;
-    }
-}
+            let offset = this._nextVertexIndex * this._vertexSize;
+
+            this._vertices[offset + 0] = start[0];
+            this._vertices[offset + 1] = start[1];
+            this._vertices[offset + 2] = start[2];
+
+            this._vertices[offset + 3] = startColor.r;
+            this._vertices[offset + 4] = startColor.g;
+            this._vertices[offset + 5] = startColor.b;
+            this._vertices[offset + 6] = startColor.a;
+
+            this._nextVertexIndex++;
+
+            offset = this._nextVertexIndex * this._vertexSize;
+            this._vertices[offset + 0] = end[0];
+            this._vertices[offset + 1] = end[1];
+            this._vertices[offset + 2] = end[2];
+
+            this._vertices[offset + 3] = endColor.r;
+            this._vertices[offset + 4] = endColor.g;
+            this._vertices[offset + 5] = endColor.b;
+            this._vertices[offset + 6] = endColor.a;
+
+            this._nextVertexIndex++;
+        }
+
+        _initBuffers() {
+            let gl = this._glContext;
+
+            let vb = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+            gl.bufferData(gl.ARRAY_BUFFER, this._vertexSize * this._maxLines * 4, gl.STREAM_DRAW);
+
+            // maxLines * sizeof(uint16) * vertices_per_line
+            //
+            // Well this is actually not enough for face index buffer
+            // Because faces with more than 3 vertices take up more indices than lines.
+            // But it's close enough.
+            let ibSize = this._maxLines * 2 * 2;
+
+            let lineIb = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, lineIb);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ibSize, gl.STREAM_DRAW);
+
+            let faceIb = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, faceIb);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ibSize, gl.STREAM_DRAW);
+
+            this._vbo = vb;
+            this._lineIb = lineIb;
+            this._faceIb = faceIb;
+        }
+    };
+
+})(this);
