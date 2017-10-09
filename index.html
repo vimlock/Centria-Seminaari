@@ -112,11 +112,13 @@ varying vec4 vColor;
 
 #ifdef COMPILE_VERTEX
 
+uniform vec4 uTint;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Vertex shader
 
 void main() {
-    vColor = iColor;
+    vColor = iColor * uTint;
     gl_Position = uViewProjectionMatrix * vec4(iPosition, 1.0);
 }
 
@@ -740,6 +742,7 @@ function sceneTest() {
         m.enableDefine("DIFFUSEMAP");
         m.enableDefine("NORMALS");
         m.enableDefine("NORMALMAP");
+        m.enableDefine("FOG");
 
         m.textures = new Map([
             ["diffuseMap", engine.resources.getCached(Texture, "data/textures/CubeDiffuse.png")],
@@ -813,7 +816,7 @@ function sceneTest() {
         engine.renderer.renderScene(scene, camera);
 
         debug.dottedCircle([0, 0, 0], 3, vec3.left, Color.magenta);
-
+        debug.cube([0, 0, 0], 5, Color.green, true);
         debug.dottedCircle(lightNode.worldPosition, 1.0, vec3.left, Color.yellow);
 
         drawOriginAxes(debug, 200, 0.5);

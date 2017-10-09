@@ -107,6 +107,76 @@ class DebugRenderer {
         }
     }
 
+    cube(center, radius, color, filled=false) {
+        let half = radius * 0.5;
+
+        let vertexOffset = this._nextVertexIndex;
+        let lineOffset = this._nextLineIndex;
+        let faceOffset = this._nextFaceIndex;
+
+        this._addVertex(vec3.add(center, [-half, -half, -half]), color);
+        this._addVertex(vec3.add(center, [ half, -half, -half]), color);
+        this._addVertex(vec3.add(center, [ half,  half, -half]), color);
+        this._addVertex(vec3.add(center, [-half,  half, -half]), color);
+
+        this._addVertex(vec3.add(center, [-half, -half,  half]), color);
+        this._addVertex(vec3.add(center, [ half, -half,  half]), color);
+        this._addVertex(vec3.add(center, [ half,  half,  half]), color);
+        this._addVertex(vec3.add(center, [-half,  half,  half]), color);
+
+        let lines = [
+            0, 1,  1, 2,  2, 3,  3, 0,
+
+            4, 5,  5, 6,  6, 7,  7, 4,
+
+            0, 4,  1, 5,  2, 6,  3, 7,
+        ];
+
+        for (let i = 0; i < lines.length; i += 2) {
+            let start = lines[i + 0];
+            let end = lines[i + 1];
+
+            this._lineIndices[lineOffset + i + 0] = vertexOffset + start;
+            this._lineIndices[lineOffset + i + 1] = vertexOffset + end;
+        }
+
+        this._nextLineIndex += lines.length;
+
+        if (filled) {
+
+            // Generated with trial and error, winding order is fucked up
+            let faces = [
+                // front
+                0, 1, 2,  0, 2, 3,
+
+                // back
+                4, 5, 6,  4, 6, 7,
+
+                // Bottom
+                0, 4, 5,  0, 5, 1,
+
+                // Top
+                2, 3, 6,  6, 7, 3,
+
+                // Left
+                0, 3, 4,  4, 3, 7,
+
+                // Right
+                1, 5, 6,  6, 2, 1
+            ];
+
+            for (let i = 0; i < faces.length; i += 3) {
+                this._faceIndices[faceOffset + i + 0] = vertexOffset + faces[i + 0];
+                this._faceIndices[faceOffset + i + 1] = vertexOffset + faces[i + 1];
+                this._faceIndices[faceOffset + i + 2] = vertexOffset + faces[i + 2];
+            }
+
+            console.log(this._faceIndices);
+
+            this._nextFaceIndex += faces.length;
+        }
+    }
+
     sphere(center, radius, color, rings=8, sectors=8) {
     }
 
@@ -145,6 +215,21 @@ class DebugRenderer {
         this._nextVertexIndex = 0;
         this._nextFaceIndex = 0;
         this._nextLineIndex = 0;
+    }
+
+    _addVertex(position, color) {
+        let offset = this._nextVertexIndex * this._vertexSize;
+
+        this._vertices[offset + 0] = position[0];
+        this._vertices[offset + 1] = position[1];
+        this._vertices[offset + 2] = position[2];
+
+        this._vertices[offset + 3] = color.r;
+        this._vertices[offset + 4] = color.g;
+        this._vertices[offset + 5] = color.b;
+        this._vertices[offset + 6] = color.a;
+
+        this._nextVertexIndex++;
     }
 
     _addLine(start, end, startColor, endColor) {

@@ -217,6 +217,7 @@
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
             gl.enable(gl.BLEND);
             gl.enable(gl.DEPTH_TEST);
+            gl.disable(gl.CULL_FACE);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, debugRenderer._vbo);
             gl.vertexAttribPointer(0, 3, gl.FLOAT, false, debugRenderer._vertexSize * 4, 0);
@@ -224,12 +225,15 @@
 
             // Draw faces
             if (debugRenderer._nextFaceIndex > 0) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
+                gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 0.1);
+
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._faceIb);
                 gl.drawElements(gl.TRIANGLES, debugRenderer._nextFaceIndex, gl.UNSIGNED_SHORT, 0);
             }
             
             // Draw lines
             if (debugRenderer._nextLineIndex > 0) {
+                gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 1.0);
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
                 gl.drawElements(gl.LINES, debugRenderer._nextLineIndex, gl.UNSIGNED_SHORT, 0);
             }
@@ -819,6 +823,8 @@
 
                 fogParams: gl.getUniformLocation(program, "uFogParams"),
                 fogColor: gl.getUniformLocation(program, "uFogColor"),
+
+                debugTint: gl.getUniformLocation(program, "uTint"),
             };
 
             prog.textureLocations = {
