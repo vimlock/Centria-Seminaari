@@ -429,7 +429,7 @@ void main()
     #endif
 
     #ifdef ENVIRONMENTMAP
-        col.rgb += texture(sEnvironmentMap, reflect(vReflection, vNormal)).rgb * 0.5;
+        col.rgb += texture(sEnvironmentMap, normalize(reflect(vReflection, normal))).rgb * 0.2;
     #endif
 
     #ifdef FOG
@@ -741,6 +741,7 @@ function sceneTest() {
             m, 100);
 
         let testNode = scene.createChild("Cube");
+        testNode.scaleLocal([3, 3, 3]);
         testNode.translateLocal([0, 5, 0]);
 
         let model = testNode.createComponent(Model);
@@ -817,6 +818,7 @@ function sceneTest() {
 
     let envmapNode = scene.createChild("EnvironmentMap");
     envmapNode.createComponent(EnvironmentMap);
+    envmapNode.translateLocal([0, 20, 0]);
 
     let prevFrameTime = Date.now();
 
