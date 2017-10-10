@@ -247,6 +247,7 @@
             gl.enable(gl.BLEND);
             gl.enable(gl.DEPTH_TEST);
             gl.disable(gl.CULL_FACE);
+            gl.depthMask(false);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, debugRenderer._vbo);
             gl.vertexAttribPointer(0, 3, gl.FLOAT, false, debugRenderer._vertexSize * 4, 0);
@@ -298,6 +299,8 @@
 
             gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
 
+            gl.viewport(0, 0, cubemap._resolution, cubemap._resolution);
+
             for (let i = 0; i < 6; ++i) {
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemap._glTexture);
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap._glTexture, 0);
@@ -308,6 +311,8 @@
 
             gl.bindRenderbuffer(gl.RENDERBUFFER, null);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         }
 
         /**

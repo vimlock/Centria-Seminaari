@@ -627,8 +627,8 @@ function updateCamera(camNode, timeDelta) {
     if (engine.input["w"]) { dz += 1.0; }
     if (engine.input["s"]) { dz -= 1.0; }
 
-    if (engine.input["d"]) { dx -= 1.0; }
-    if (engine.input["a"]) { dx += 1.0; }
+    if (engine.input["d"]) { dx += 1.0; }
+    if (engine.input["a"]) { dx -= 1.0; }
 
     if (engine.input["e"]) { dy -= 1.0; }
     if (engine.input["q"]) { dy += 1.0; }
@@ -639,14 +639,24 @@ function updateCamera(camNode, timeDelta) {
     dx *= timeDelta * speed;
     dy *= timeDelta * speed;
 
+    /*
     let d = vec3.add(
         vec3.scale(camNode.forward, dz),
         vec3.scale(camNode.left, dx)
     );
 
     d = vec3.add(d, vec3.scale(camNode.up, dy));
+    */
+
+    let d = vec3.add(
+        vec3.add(vec3.scale(vec3.left, dx), vec3.scale(vec3.up, dy)),
+        vec3.scale(vec3.forward, dz)
+    );
 
     camNode.translateLocal(d);
+    camNode.worldRotation = Quaternion.fromEulers(Date.now() * 0.00005 * Math.PI, 0, 0);
+
+    console.log(camNode.worldPosition);
 
 }
 
@@ -738,7 +748,7 @@ function sceneTest() {
         ]);
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
-            m, 100);
+            m, 50);
 
         let testNode = scene.createChild("Cube");
         testNode.scaleLocal([3, 3, 3]);
@@ -845,6 +855,8 @@ function sceneTest() {
         debug.dottedCircle([0, 0, 0], 3, vec3.left, Color.magenta);
         debug.cube([0, 0, 0], 5, Color.green, true);
         debug.dottedCircle(lightNode.worldPosition, 1.0, vec3.left, Color.yellow);
+
+        // debug.cube(camNode.worldPosition, 1, Color.cyan, true);
 
         drawOriginAxes(debug, 200, 0.5);
 

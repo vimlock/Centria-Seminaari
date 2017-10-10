@@ -27,7 +27,7 @@
         constructor() {
             super();
 
-            this.resolution = 256;
+            this.resolution = 512;
             this.cubemap = null;
         }
 
