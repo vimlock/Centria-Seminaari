@@ -656,9 +656,6 @@ function updateCamera(camNode, timeDelta) {
 
     camNode.translateLocal(d);
     camNode.worldRotation = Quaternion.fromEulers(Date.now() * 0.00005 * Math.PI, 0, 0);
-
-    console.log(camNode.worldPosition);
-
 }
 
 function drawOriginAxes(debug, size, opacity=1.0) {
