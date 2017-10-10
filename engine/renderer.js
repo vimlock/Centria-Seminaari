@@ -13,6 +13,9 @@
     const MAX_INSTANCES_PER_BATCH = 256;
 
     const SHADER_VERSION = "#version 300 es";
+
+    /// Custom code that is prepended to every shader.
+    /// Not used by anything right now, but could be usefull.
     const SHADER_PREAMBLE = "";
 
     /**
@@ -45,6 +48,7 @@
     }
 
     function GetTextureSlotEnum(gl, index) {
+        // TODO: Can we just gl.TEXTURE0 + index? Might be undefined behaviour.
         switch(index) {
         case 0: return gl.TEXTURE0;
         case 1: return gl.TEXTURE1;
@@ -133,6 +137,10 @@
             let environmentMaps;
 
             // Look up the environment maps
+            //
+            // We need to do this before picking up the geometries
+            // because environment maps are assigned during the scene
+            // traversal below.
             if (this.enableReflections) {
                 environmentMaps = scene.getAllComponents(EnvironmentMap);
             }
@@ -140,65 +148,17 @@
                 environmentMaps = [];
             }
 
-
+            // Traverse trought the scene and pick up Lights and Renderables
             let renderer = this;
             scene.walkEnabled(function(node) {
-
-                // Pick the lights
-                let light = node.getComponent(Light);
-                if (light) {
-                    renderer._queueLight(lights, light, node.worldTransform);
-                }
-
-                // Pick the renderables
-                let renderable = node.getComponent(Renderable);
-                if (!renderable) {
-                    return;
-                }
-
-                let materials = renderable.getRenderMaterials();
-                let geometries = renderable.getRenderGeometries();
-
-                if (!materials || !geometries)
-                    return;
-
-                renderer.performance.numModels++;
-
-                let envMap = null;
-                if (renderer.enableReflections) {
-
-                    // Use static environment map if available, otherwise pick the closest one.
-                    if (renderable.staticEnvironmentMap) {
-                        envMap = renderable.environmentMap;
-                    }
-                    else {
-                        let pos = renderable.node.worldPosition;
-                        let best = null;
-
-                        for (let i of environmentMaps) {
-                            let dist = vec3.lengthSquared(pos, i.node.worldPosition);
-
-                            if (envMap === null || dist < best) {
-                                envMap = i;
-                                best = dist;
-                            }
-                        }
-                    }
-                }
-
-                for (let i = 0; i < geometries.length; ++i) {
-                    let geom = geometries[i];
-                    let mat = materials[i] || renderer.defaultMaterial;
-
-                    if (!geom || !mat) {
-                        continue;
+                for (let comp of node.components) {
+                    if (comp instanceof Light) {
+                        renderer._queueLight(lights, comp, node.worldTransform);
                     }
 
-                    if (mat.opaque) {
-                        renderer._queueGeometry(opaqueGeomBatches, envMap, geom, mat, node.worldTransform);
-                    }
-                    else {
-                        renderer._queueGeometry(transparentGeomBatches, envMap, geom, mat, node.worldTransform);
+                    if (comp instanceof Renderable) {
+                        renderer._queueRenderable(opaqueGeomBatches, transparentGeomBatches,
+                            environmentMaps, comp);
                     }
                 }
             });
@@ -213,6 +173,7 @@
             this._cullLights(lights, MAX_LIGHTS);
 
             let gl = this.glContext;
+
             gl.clearColor( ...scene.background.toArray());
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -321,6 +282,65 @@
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        }
+
+        /**
+         * Queues all geometries from a renderable for rendering.
+         *
+         * @param opaque Batches to use if material is opaque.
+         * @param transparent Batches to use if material is transparent.
+         * @param envMaps Array of environment maps.
+         * @param renderable The renderable to queue.
+         */
+        _queueRenderable(opaque, transparent, envMaps, renderable) {
+
+            let materials = renderable.getRenderMaterials();
+            let geometries = renderable.getRenderGeometries();
+
+            if (!materials || !geometries)
+                return;
+
+            this.performance.numModels++;
+
+            let envMap = null;
+            if (this.enableReflections) {
+
+                // Use static environment map if available, otherwise pick the closest one.
+                if (renderable.staticEnvironmentMap) {
+                    envMap = renderable.environmentMap;
+                }
+                else {
+                    let pos = renderable.node.worldPosition;
+                    let best = null;
+
+                    for (let i of envMaps) {
+                        let dist = vec3.lengthSquared(pos, i.node.worldPosition);
+
+                        if (envMap === null || dist < best) {
+                            envMap = i;
+                            best = dist;
+                        }
+                    }
+                }
+            }
+
+            let worldTransform = renderable.node.worldTransform; 
+
+            for (let i = 0; i < geometries.length; ++i) {
+                let geom = geometries[i];
+                let mat = materials[i] || this.defaultMaterial;
+
+                if (!geom || !mat) {
+                    continue;
+                }
+
+                if (mat.opaque) {
+                    this._queueGeometry(opaque, envMap, geom, mat, worldTransform);
+                }
+                else {
+                    this._queueGeometry(transparent, envMap, geom, mat, worldTransform);
+                }
+            }
         }
 
         /**
@@ -441,6 +461,7 @@
                 let instanced = this.enableInstancing && mat.allowInstancing
                      && batch.transforms.length > MIN_INSTANCES_PER_BATCH;
 
+                // Add instancing define for the shader if we're using instancing.
                 if (instanced) {
                     this._bindMaterial(mat, new Map([...mat.defines, ["INSTANCING", null]]));
                 }
@@ -448,6 +469,11 @@
                     this._bindMaterial(mat, mat.defines);
                 }
 
+                // If the material binding failed we can't render.
+                //
+                // Only way the material binding can fails it that if the materials
+                // shader failed to compile, or does not exist. In this case we don't have
+                // an active shader.
                 if (!this.activeShader) {
                     continue;
                 }
@@ -457,9 +483,12 @@
                 this._bindScene(scene);
                 this._bindLights(lights);
 
-                if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
+                // Did the mesh fail to bind?
+                if (!this.activeMesh)
                     continue;
 
+                // Some sanity checking, the WebGL driver might do this on its own
+                // but never hurts to be sure.
                 if (this.activeMesh.indexCount < geo.indexOffset + geo.indexCount) {
                     console.log("Geometry indices out of range");
                     console.log(mesh);
@@ -481,6 +510,10 @@
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
 
+                // For some reason, this reaaally stalls the rendering, uncomment for debugging
+                // purposes only.
+
+                /*
                 let err = gl.getError();
                 if (err) {
 
@@ -498,6 +531,7 @@
                     console.log(geo);
                     debugger;
                 }
+                */
             }
         }
 
@@ -535,6 +569,11 @@
             let numTransforms = batch.transforms.length;
             let instanceNum = 0;
 
+            // Get the offset of the per instance model matrix
+            //
+            // First row the iInstanceModelMatrix is attribOffset + 0
+            // Second row is iInstanceModelMatrix is attribOffset + 1
+            // and so forth.
             let attribOffset = this.activeShader.attribLocations.instanceModelMatrix;
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.instancingBuffer);
@@ -674,6 +713,7 @@
 
             let attribOffsets = this.activeShader.attribLocations;
 
+            // Just to be sure...
             for (let i = 0; i < 10; i++) {
                 gl.disableVertexAttribArray(i);
             }
