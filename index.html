@@ -27,6 +27,7 @@
 		<script src="engine/environmentmap.js"></script>
 
 		<script src="engine/resource.js"></script>
+		<script src="engine/cubemap.js"></script>
 		<script src="engine/mesh.js"></script>
 		<script src="engine/file.js"></script>
 		<script src="engine/geometry.js"></script>
@@ -143,10 +144,10 @@ void main() {
 
 
 <script id="test-shader" type="noscript">
+precision mediump float;
+
 #ifdef COMPILE_FRAGMENT
     #define varying in
-    
-    precision mediump float;
 #endif
 
 #if defined(DIFFUSEMAP) || defined(SPECMAP) || defined(AMBIENTMAP) || defined(NORMALMAP)
@@ -206,6 +207,10 @@ void main() {
         in mat4 iInstanceModelMatrix;
     #endif
 
+    #ifdef ENVIRONMENTMAP
+        uniform vec3 uViewPosition;
+    #endif
+
 #endif
 
 #if __VERSION__ >= 130
@@ -227,6 +232,10 @@ void main() {
 #ifdef NORMALMAP
     varying vec3 vTangent;
     varying vec3 vBitangent;
+#endif
+
+#ifdef ENVIRONMENTMAP
+    varying vec3 vReflection;
 #endif
 
 varying vec3 vWorldPos;
@@ -275,6 +284,10 @@ void main()
         vBitangent = iBitangent;
     #endif
 
+    #ifdef ENVIRONMENTMAP
+        vReflection = vWorldPos - uViewPosition;
+    #endif
+
     gl_Position = pos;
 }
 
@@ -294,8 +307,8 @@ uniform sampler2D sSpecularMap;
 uniform sampler2D sAmbientMap;
 uniform sampler2D sNormalMap;
 uniform sampler2D sHeightMap;
-uniform sampler2D sEmissionMap;
-uniform sampler2D sEnvironmentMap;
+// uniform sampler2D sEmissionMap;
+uniform samplerCube sEnvironmentMap;
 
 uniform vec4 uDiffuseColor;
 uniform vec4 uSpecularColor;
@@ -413,6 +426,10 @@ void main()
 
     #ifdef EMSSIONMAP
         col.rgb += col.rgb * uEmissionMap.r;
+    #endif
+
+    #ifdef ENVIRONMENTMAP
+        col.rgb += texture(sEnvironmentMap, reflect(vReflection, vNormal)).rgb * 0.5;
     #endif
 
     #ifdef FOG
@@ -714,17 +731,11 @@ function sceneTest() {
         m.enableDefine("NORMALS");
         m.enableDefine("LIGHTS");
         m.enableDefine("FOG");
+        m.enableDefine("ENVIRONMENTMAP");
 
         m.textures = new Map([
             ["diffuseMap", t]
         ]);
-
-        m.opaque = false;
-        m.blendMode = "add";
-        m.depthWrite = false;
-        m.cullFaces = false;
-
-        m.diffuseColor.a = 0.9;
 
         spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
             m, 100);
@@ -745,6 +756,7 @@ function sceneTest() {
         m.enableDefine("NORMALS");
         m.enableDefine("NORMALMAP");
         m.enableDefine("FOG");
+        m.enableDefine("ENVIRONMENTMAP");
 
         m.textures = new Map([
             ["diffuseMap", engine.resources.getCached(Texture, "data/textures/CubeDiffuse.png")],
@@ -753,6 +765,12 @@ function sceneTest() {
 
         model.material = m;
         model.materials[1] = m;
+
+        let envMaps = scene.getAllComponents(EnvironmentMap);
+        envMaps.forEach(function(env, index) {
+            console.log("Building environment map " + index + "/" + envMaps.length);
+            env.build(engine.renderer);
+        });
     });
 
     let debug = new DebugRenderer(engine.gl);
@@ -799,11 +817,6 @@ function sceneTest() {
 
     let envmapNode = scene.createChild("EnvironmentMap");
     envmapNode.createComponent(EnvironmentMap);
-
-    let envMaps = scene.getAllComponents(EnvironmentMap);
-    envMaps.forEach(function(env, index) {
-        console.log("Building environment map " + index + "/" + envMaps.length);
-    });
 
     let prevFrameTime = Date.now();
 

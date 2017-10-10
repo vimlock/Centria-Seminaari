@@ -1,4 +1,4 @@
-/* global buildShaderKey, Color, Light, Material, Model, ShaderProgram, mat4, vec3 */
+/* global buildShaderKey, Color, EnvironmentMap, Light, Material, Model, ShaderProgram, mat4, vec3 */
 "use strict";
 
 (function(context) {
@@ -38,6 +38,7 @@
         case "heightMap":   return 3;
         case "ambientMap":  return 4;
         case "emissionMap": return 5;
+        case "environmentMap": return 6;
         default:
             return null;
         }
@@ -51,6 +52,8 @@
         case 3: return gl.TEXTURE3;
         case 4: return gl.TEXTURE4;
         case 5: return gl.TEXTURE5;
+        case 6: return gl.TEXTURE6;
+        case 7: return gl.TEXTURE7;
         }
     }
 
@@ -59,8 +62,9 @@
      * Holds the geometries which are collected from the scene
      * during rendering.
      */
-    function GeometryBatch(geometry, material) {
+    function GeometryBatch(geometry, envMap, material) {
         this.geometry = geometry;
+        this.envMap = envMap;
         this.material = material;
         this.transforms = [];
     }
@@ -99,6 +103,7 @@
             this.activeShader = null;
 
             this.enableInstancing = true;
+            this.enableReflections = true;
 
             if (this.enableInstancing) {
                 this._createInstancingBuffer();
@@ -125,8 +130,18 @@
             let opaqueGeomBatches = [];
             let transparentGeomBatches = [];
 
-            let renderer = this;
+            let environmentMaps;
 
+            // Look up the environment maps
+            if (this.enableReflections) {
+                environmentMaps = scene.getAllComponents(EnvironmentMap);
+            }
+            else {
+                environmentMaps = [];
+            }
+
+
+            let renderer = this;
             scene.walkEnabled(function(node) {
 
                 // Pick the lights
@@ -141,6 +156,29 @@
 
                     renderer.performance.numModels++;
 
+                    let envMap = null;
+
+                    if (renderer.enableReflections) {
+
+                        // Use static environment map if available, otherwise pick the closest one.
+                        if (model.staticEnvironmentMap) {
+                            envMap = model.environmentMap;
+                        }
+                        else {
+                            let pos = model.node.worldPosition;
+                            let best = null;
+
+                            for (let i of environmentMaps) {
+                                let dist = vec3.lengthSquared(pos, i.node.worldPosition);
+
+                                if (envMap === null || dist < best) {
+                                    envMap = i;
+                                    best = dist;
+                                }
+                            }
+                        }
+                    }
+
                     model.mesh.geometries.forEach(function (geometry, index) {
                         let material = model.getMaterial(index) || renderer.defaultMaterial;
                         if (!material) {
@@ -148,10 +186,10 @@
                         }
 
                         if (material.opaque) {
-                            renderer._queueGeometry(opaqueGeomBatches, geometry, material, node.worldTransform);
+                            renderer._queueGeometry(opaqueGeomBatches, envMap, geometry, material, node.worldTransform);
                         }
                         else {
-                            renderer._queueGeometry(transparentGeomBatches, geometry, material, node.worldTransform);
+                            renderer._queueGeometry(transparentGeomBatches, envMap, geometry, material, node.worldTransform);
                         }
                     });
                 }
@@ -228,7 +266,48 @@
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
                 gl.drawElements(gl.LINES, debugRenderer._nextLineIndex, gl.UNSIGNED_SHORT, 0);
             }
+        }
 
+        /**
+         * Renders a scene to a cubemap
+         *
+         * @param cubemap {CubeMap} 
+         * @param scene {Scene}
+         * @param views {Array.<RenderView> views to use for rendering.
+         *     Should be ordered as +x, -x, +y, -y, +z, -z
+         */
+        renderCubeMap(cubemap, scene, views) {
+            if (!cubemap) {
+                console.log("Can't render cubemap without target");
+                return;
+            }
+
+            if (!views || views.length !== 6) {
+                console.log("Can't render cubemap without 6 views");
+                return;
+            }
+
+            let gl = this.glContext;
+
+            let fb = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+
+            let rb = gl.createRenderbuffer();
+            gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, cubemap._resolution, cubemap._resolution );
+
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+
+            for (let i = 0; i < 6; ++i) {
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemap._glTexture);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap._glTexture, 0);
+
+                this.renderScene(scene, views[i]);
+                console.log("Render cubemap face " + i);
+            }
+
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         }
 
         /**
@@ -237,7 +316,7 @@
          * If a batch with the same material-geometry combination does not exist,
          * it will be created.
          */
-        _queueGeometry(batches, geometry, material, transform) {
+        _queueGeometry(batches, envMap, geometry, material, transform) {
 
             let batch = null;
 
@@ -246,7 +325,7 @@
             // This could be a bit slow with large scenes, O(n).
             // But it's not the bottleneck right now.
             for (let i of batches) {
-                if (i.geometry === geometry && i.material === material) {
+                if (i.geometry === geometry && i.material === material && i.envMap === envMap) {
                     batch = i;
                     break;
                 }
@@ -254,7 +333,7 @@
 
             // If no batch exists, create a new one.
             if (batch === null) {
-                batch = new GeometryBatch(geometry, material);
+                batch = new GeometryBatch(geometry, envMap, material);
                 batches.push(batch);
             }
 
@@ -332,6 +411,7 @@
                 let geo = batch.geometry;
                 let mesh = batch.geometry.mesh;
                 let mat = batch.material;
+                let env = batch.envMap;
 
                 let drawType = GetDrawType(gl, mat);
 
@@ -376,6 +456,11 @@
 
                 this.performance.vertices += geo.indexCount * batch.transforms.length;
 
+                // Bind environment maps for reflections
+                if (env) {
+                    this._bindCubeMap("environmentMap", env.cubemap);
+                }
+
                 if (instanced) {
                     this._drawInstanced(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
@@ -383,14 +468,23 @@
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
 
-                /*
-                if (gl.getError()) {
-                    console.log("Error rendering geometry");
+                let err = gl.getError();
+                if (err) {
+
+                    let errstr = ({
+                        [gl.INVALID_ENUM]: "Invalid enum",
+                        [gl.INVALID_VALUE]: "Invalid value",
+                        [gl.INVALID_OPERATION]: "Invalid operation",
+                        [gl.INVALID_FRAMEBUFFER_OPERATION]: "Invalid framebuffer operation",
+                        [gl.OUT_OF_MEMORY]: "Out of memory",
+                        [gl.CONTEXT_LOST_WEBGL]: "Context lost"
+                    })[err];
+
+                    console.log("Error rendering geometry " + errstr);
                     console.log(mesh);
                     console.log(geo);
                     debugger;
                 }
-                */
             }
         }
 
@@ -601,6 +695,27 @@
             }
             gl.activeTexture(GetTextureSlotEnum(gl, index));
             gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
+            gl.uniform1i(textureLocations[name], index);
+        }
+
+        /**
+         * Setups a cube map for rendering.
+         */
+        _bindCubeMap(name, texture) {
+            this.performance.bindTexture++;
+
+            let gl = this.glContext;
+            let textureLocations = this.activeShader.textureLocations;
+
+            let index = GetTextureSlotIndex(name);
+            if (index === null) {
+                return;
+            }
+
+            let tmp = texture ? texture._glTexture : null;
+
+            gl.activeTexture(GetTextureSlotEnum(gl, index));
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tmp);
             gl.uniform1i(textureLocations[name], index);
         }
 
@@ -832,6 +947,7 @@
                 specularMap: gl.getUniformLocation(program, "sSpecularMap"),
                 ambientMap: gl.getUniformLocation(program, "sAmbientMap"),
                 normalMap: gl.getUniformLocation(program, "sNormalMap"),
+                environmentMap: gl.getUniformLocation(program, "sEnvironmentMap"),
             };
 
             // Lights are a bit of a special case.

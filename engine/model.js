@@ -20,6 +20,9 @@
             /// If the material is missing, renderers default material will be used.
             this.materials = [];
             this.materialNames = [];
+
+            this.staticEnvironmentMap = false;
+            this.environmentMap = null;
         }
 
         /**

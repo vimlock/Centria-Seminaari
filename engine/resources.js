@@ -262,12 +262,4 @@
 
     };
 
-
-    context.CubeMap = class CubeMap {
-        constructor() {
-            this.glTexture = null;
-        }
-    };
-
-
 })(this);
