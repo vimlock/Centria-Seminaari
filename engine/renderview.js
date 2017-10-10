@@ -5,6 +5,9 @@
 
 class RenderView {
     constructor(projection, view) {
+
+        view = mat4.invert(view);
+
         this.projectionMatrix = projection;
         this.viewMatrix = view;
 
