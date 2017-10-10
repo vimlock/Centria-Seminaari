@@ -1,4 +1,4 @@
-/* global buildShaderKey, Color, EnvironmentMap, Light, Material, Model, ShaderProgram, mat4, vec3 */
+/* global buildShaderKey, Color, EnvironmentMap, Light, Material, Renderable, ShaderProgram, mat4, vec3 */
 "use strict";
 
 (function(context) {
@@ -150,48 +150,56 @@
                     renderer._queueLight(lights, light, node.worldTransform);
                 }
 
-                // Pick the models
-                let model = node.getComponent(Model);
-                if (model && model.mesh) {
+                // Pick the renderables
+                let renderable = node.getComponent(Renderable);
+                if (!renderable) {
+                    return;
+                }
 
-                    renderer.performance.numModels++;
+                let materials = renderable.getRenderMaterials();
+                let geometries = renderable.getRenderGeometries();
 
-                    let envMap = null;
+                if (!materials || !geometries)
+                    return;
 
-                    if (renderer.enableReflections) {
+                renderer.performance.numModels++;
 
-                        // Use static environment map if available, otherwise pick the closest one.
-                        if (model.staticEnvironmentMap) {
-                            envMap = model.environmentMap;
-                        }
-                        else {
-                            let pos = model.node.worldPosition;
-                            let best = null;
+                let envMap = null;
+                if (renderer.enableReflections) {
 
-                            for (let i of environmentMaps) {
-                                let dist = vec3.lengthSquared(pos, i.node.worldPosition);
+                    // Use static environment map if available, otherwise pick the closest one.
+                    if (renderable.staticEnvironmentMap) {
+                        envMap = renderable.environmentMap;
+                    }
+                    else {
+                        let pos = renderable.node.worldPosition;
+                        let best = null;
 
-                                if (envMap === null || dist < best) {
-                                    envMap = i;
-                                    best = dist;
-                                }
+                        for (let i of environmentMaps) {
+                            let dist = vec3.lengthSquared(pos, i.node.worldPosition);
+
+                            if (envMap === null || dist < best) {
+                                envMap = i;
+                                best = dist;
                             }
                         }
                     }
+                }
 
-                    model.mesh.geometries.forEach(function (geometry, index) {
-                        let material = model.getMaterial(index) || renderer.defaultMaterial;
-                        if (!material) {
-                            return;
-                        }
+                for (let i = 0; i < geometries.length; ++i) {
+                    let geom = geometries[i];
+                    let mat = materials[i] || renderer.defaultMaterial;
 
-                        if (material.opaque) {
-                            renderer._queueGeometry(opaqueGeomBatches, envMap, geometry, material, node.worldTransform);
-                        }
-                        else {
-                            renderer._queueGeometry(transparentGeomBatches, envMap, geometry, material, node.worldTransform);
-                        }
-                    });
+                    if (!geom || !mat) {
+                        continue;
+                    }
+
+                    if (mat.opaque) {
+                        renderer._queueGeometry(opaqueGeomBatches, envMap, geom, mat, node.worldTransform);
+                    }
+                    else {
+                        renderer._queueGeometry(transparentGeomBatches, envMap, geom, mat, node.worldTransform);
+                    }
                 }
             });
 

@@ -1,11 +1,11 @@
-/* global Component, Mesh, Material */
+/* global Renderable, Mesh, Material */
 "use strict";
 
 (function (context) {
     /**
      * Model component.
      */
-    context.Model = class Model extends Component {
+    context.Model = class Model extends Renderable {
 
         constructor()  {
             super();
@@ -20,9 +20,6 @@
             /// If the material is missing, renderers default material will be used.
             this.materials = [];
             this.materialNames = [];
-
-            this.staticEnvironmentMap = false;
-            this.environmentMap = null;
         }
 
         /**
@@ -62,6 +59,14 @@
             else {
                 return null;
             }
+        }
+
+        getRenderGeometries() {
+            return this.mesh ? this.mesh.geometries : null;
+        }
+
+        getRenderMaterials() {
+            return this.materials;
         }
 
         serialize(serializer) {
