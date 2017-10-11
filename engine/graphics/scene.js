@@ -688,6 +688,24 @@
         }
 
         /**
+         * Returns every component in the scene with the given type
+         *
+         * @param type Type of the component to search for 
+         * @returns {Array.<type>
+         */
+        getAllComponents(type) {
+            let c = [];
+
+            for (let [, component] of this.components) {
+                if (component instanceof type) {
+                    c.push(component);
+                }
+            }
+
+            return c;
+        }
+
+        /**
          * Called when a node is added to the scene.
          */
         _registerNode(node) {

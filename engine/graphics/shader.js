@@ -12,14 +12,16 @@
     context.buildShaderKey = function(name, defines) {
         let defineStrs = [];
 
-        defines.forEach(function(val, key) {
-            if (val === null) {
-                defineStrs.push(key);
-            }
-            else {
-                defineStrs.push(key + "=" + val);
-            }
-        });
+        if (defines) {
+            defines.forEach(function(val, key) {
+                if (val === null) {
+                    defineStrs.push(key);
+                }
+                else {
+                    defineStrs.push(key + "=" + val);
+                }
+            });
+        }
 
         return name + "(" + defineStrs.join(";") + ")";
     };

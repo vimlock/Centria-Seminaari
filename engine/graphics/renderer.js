@@ -1,4 +1,5 @@
-/* global buildShaderKey, Camera, Color, Light, Material, Model, ShaderProgram, mat4, vec3 */
+/* global buildShaderKey, Color, EnvironmentMap, Light, Material, Renderable, ShaderProgram, mat4, vec3 */
+/* global CubeMap, makeCheckerTexture */
 "use strict";
 
 (function(context) {
@@ -13,6 +14,9 @@
     const MAX_INSTANCES_PER_BATCH = 256;
 
     const SHADER_VERSION = "#version 300 es";
+
+    /// Custom code that is prepended to every shader.
+    /// Not used by anything right now, but could be usefull.
     const SHADER_PREAMBLE = "";
 
     /**
@@ -38,12 +42,14 @@
         case "heightMap":   return 3;
         case "ambientMap":  return 4;
         case "emissionMap": return 5;
+        case "environmentMap": return 6;
         default:
             return null;
         }
     }
 
     function GetTextureSlotEnum(gl, index) {
+        // TODO: Can we just gl.TEXTURE0 + index? Might be undefined behaviour.
         switch(index) {
         case 0: return gl.TEXTURE0;
         case 1: return gl.TEXTURE1;
@@ -51,6 +57,8 @@
         case 3: return gl.TEXTURE3;
         case 4: return gl.TEXTURE4;
         case 5: return gl.TEXTURE5;
+        case 6: return gl.TEXTURE6;
+        case 7: return gl.TEXTURE7;
         }
     }
 
@@ -59,8 +67,9 @@
      * Holds the geometries which are collected from the scene
      * during rendering.
      */
-    function GeometryBatch(geometry, material) {
+    function GeometryBatch(geometry, envMap, material) {
         this.geometry = geometry;
+        this.envMap = envMap;
         this.material = material;
         this.transforms = [];
     }
@@ -98,7 +107,10 @@
             this.activeMesh = null;
             this.activeShader = null;
 
+            this.defaultCubeMap = CubeMap.createFromPixels(64, makeCheckerTexture(Color.cyan, Color.black, 64));
+
             this.enableInstancing = true;
+            this.enableReflections = true;
 
             if (this.enableInstancing) {
                 this._createInstancingBuffer();
@@ -108,13 +120,14 @@
         /**
          * Draws a scene to the default viewport
          *
-         * If camera is defined, it will be used instead of the scenes
-         * own camera.
-         *
          * If shaderOverride is defined, it will used instead of the
          * materials own shader.
+         *
+         * @param scene {Scene} The Scene to use for rendering .
+         * @param renderView {RenderView} The window into the scene.
+         * @param shaderOverride {ShaderSource} Shader to override materials own shader with.
          */
-        renderScene(scene, camera, shaderOverride) {
+        renderScene(scene, renderView, shaderOverride) {
             // Prepare scene for rendering
             
             let lights = [];
@@ -124,58 +137,46 @@
             let opaqueGeomBatches = [];
             let transparentGeomBatches = [];
 
+            let environmentMaps;
+
+            // Look up the environment maps
+            //
+            // We need to do this before picking up the geometries
+            // because environment maps are assigned during the scene
+            // traversal below.
+            if (this.enableReflections) {
+                environmentMaps = scene.getAllComponents(EnvironmentMap);
+            }
+            else {
+                environmentMaps = [];
+            }
+
+            // Traverse trought the scene and pick up Lights and Renderables
             let renderer = this;
-
             scene.walkEnabled(function(node) {
+                for (let comp of node.components) {
+                    if (comp instanceof Light) {
+                        renderer._queueLight(lights, comp, node.worldTransform);
+                    }
 
-                // Pick the lights
-                let light = node.getComponent(Light);
-                if (light) {
-                    renderer._queueLight(lights, light, node.worldTransform);
-                }
-
-                // Pick the models
-                let model = node.getComponent(Model);
-                if (model && model.mesh) {
-
-                    renderer.performance.numModels++;
-
-                    model.mesh.geometries.forEach(function (geometry, index) {
-                        let material = model.getMaterial(index) || renderer.defaultMaterial;
-                        if (!material) {
-                            return;
-                        }
-
-                        if (material.opaque) {
-                            renderer._queueGeometry(opaqueGeomBatches, geometry, material, node.worldTransform);
-                        }
-                        else {
-                            renderer._queueGeometry(transparentGeomBatches, geometry, material, node.worldTransform);
-                        }
-                    });
-                }
-
-                // Pick a camera, if we have not found one yet
-                if (!camera) {
-                    camera = node.getComponent(Camera);
+                    if (comp instanceof Renderable) {
+                        renderer._queueRenderable(opaqueGeomBatches, transparentGeomBatches,
+                            environmentMaps, comp);
+                    }
                 }
             });
 
-
-            if (!camera) {
-                console.log("No camera found to render scene with");
-                return;
-            }
-
             // Calculate light priorities for culling
-            let camPosition = camera.node.worldPosition;
+            let camPosition = renderView.position;
+
             for (let l of lights) {
                 l.priority = vec3.distanceSquared(mat4.getTranslation(l.transform), camPosition) * l.intensity;
             }
 
-            this._cullLights(camera, lights, MAX_LIGHTS);
+            this._cullLights(lights, MAX_LIGHTS);
 
             let gl = this.glContext;
+
             gl.clearColor( ...scene.background.toArray());
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -186,8 +187,163 @@
             
             this.performance.numLights += lights.length;
             
-            this._renderPass(camera, lights, opaqueGeomBatches, shaderOverride);
-            this._renderPass(camera, lights, transparentGeomBatches, shaderOverride);
+            this._renderPass(scene, renderView, lights, opaqueGeomBatches, shaderOverride);
+            this._renderPass(scene, renderView, lights, transparentGeomBatches, shaderOverride);
+        }
+
+        renderDebugLines(renderView, debugRenderer) {
+
+            if (debugRenderer._nextVertexIndex <= 0) {
+                return;
+            }
+
+            // Setup drawing state
+            let shader = this._getShaderProgram(debugRenderer._shader);
+            if (!shader) {
+                return;
+            }
+
+            this._bindShader(shader);
+            if (!this.activeShader) {
+                return;
+            }
+
+
+            debugRenderer.updateBuffers();
+
+            this._bindRenderView(renderView);
+
+            let gl = this.glContext;
+
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.enable(gl.BLEND);
+            gl.enable(gl.DEPTH_TEST);
+            gl.disable(gl.CULL_FACE);
+            gl.depthMask(false);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, debugRenderer._vbo);
+            gl.vertexAttribPointer(0, 3, gl.FLOAT, false, debugRenderer._vertexSize * 4, 0);
+            gl.vertexAttribPointer(1, 4, gl.FLOAT, false, debugRenderer._vertexSize * 4, 3 * 4);
+
+            // Draw faces
+            if (debugRenderer._nextFaceIndex > 0) {
+                gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 0.05);
+
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._faceIb);
+                gl.drawElements(gl.TRIANGLES, debugRenderer._nextFaceIndex, gl.UNSIGNED_SHORT, 0);
+            }
+            
+            // Draw lines
+            if (debugRenderer._nextLineIndex > 0) {
+                gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 1.0);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
+                gl.drawElements(gl.LINES, debugRenderer._nextLineIndex, gl.UNSIGNED_SHORT, 0);
+            }
+        }
+
+        /**
+         * Renders a scene to a cubemap
+         *
+         * @param cubemap {CubeMap} 
+         * @param scene {Scene}
+         * @param views {Array.<RenderView> views to use for rendering.
+         *     Should be ordered as +x, -x, +y, -y, +z, -z
+         */
+        renderCubeMap(cubemap, scene, views) {
+            if (!cubemap) {
+                console.log("Can't render cubemap without target");
+                return;
+            }
+
+            if (!views || views.length !== 6) {
+                console.log("Can't render cubemap without 6 views");
+                return;
+            }
+
+            let gl = this.glContext;
+
+            let fb = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+
+            let rb = gl.createRenderbuffer();
+            gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, cubemap._resolution, cubemap._resolution );
+
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+
+            gl.viewport(0, 0, cubemap._resolution, cubemap._resolution);
+
+            for (let i = 0; i < 6; ++i) {
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemap._glTexture);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap._glTexture, 0);
+
+                this.renderScene(scene, views[i]);
+                console.log("Render cubemap face " + i);
+            }
+
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        }
+
+        /**
+         * Queues all geometries from a renderable for rendering.
+         *
+         * @param opaque Batches to use if material is opaque.
+         * @param transparent Batches to use if material is transparent.
+         * @param envMaps Array of environment maps.
+         * @param renderable The renderable to queue.
+         */
+        _queueRenderable(opaque, transparent, envMaps, renderable) {
+
+            let materials = renderable.getRenderMaterials();
+            let geometries = renderable.getRenderGeometries();
+
+            if (!materials || !geometries)
+                return;
+
+            this.performance.numModels++;
+
+            let envMap = null;
+            if (this.enableReflections) {
+
+                // Use static environment map if available, otherwise pick the closest one.
+                if (renderable.staticEnvironmentMap) {
+                    envMap = renderable.environmentMap;
+                }
+                else {
+                    let pos = renderable.node.worldPosition;
+                    let best = null;
+
+                    for (let i of envMaps) {
+                        let dist = vec3.lengthSquared(pos, i.node.worldPosition);
+
+                        if (envMap === null || dist < best) {
+                            envMap = i;
+                            best = dist;
+                        }
+                    }
+                }
+            }
+
+            let worldTransform = renderable.node.worldTransform; 
+
+            for (let i = 0; i < geometries.length; ++i) {
+                let geom = geometries[i];
+                let mat = materials[i] || this.defaultMaterial;
+
+                if (!geom || !mat) {
+                    continue;
+                }
+
+                if (mat.opaque) {
+                    this._queueGeometry(opaque, envMap, geom, mat, worldTransform);
+                }
+                else {
+                    this._queueGeometry(transparent, envMap, geom, mat, worldTransform);
+                }
+            }
         }
 
         /**
@@ -196,7 +352,7 @@
          * If a batch with the same material-geometry combination does not exist,
          * it will be created.
          */
-        _queueGeometry(batches, geometry, material, transform) {
+        _queueGeometry(batches, envMap, geometry, material, transform) {
 
             let batch = null;
 
@@ -205,7 +361,7 @@
             // This could be a bit slow with large scenes, O(n).
             // But it's not the bottleneck right now.
             for (let i of batches) {
-                if (i.geometry === geometry && i.material === material) {
+                if (i.geometry === geometry && i.material === material && i.envMap === envMap) {
                     batch = i;
                     break;
                 }
@@ -213,7 +369,7 @@
 
             // If no batch exists, create a new one.
             if (batch === null) {
-                batch = new GeometryBatch(geometry, material);
+                batch = new GeometryBatch(geometry, envMap, material);
                 batches.push(batch);
             }
 
@@ -231,11 +387,10 @@
         /**
          * Limits the number of batches to maxBatches.
          *
-         * @param camera {Camera} The camera to for culling.
          * @param lightBatches {Array.<Light>} The Lights which are to be culled.
          * @param maxLights Light limit.
          */
-        _cullLights(camera, lights, maxLights) {
+        _cullLights(lights, maxLights) {
 
             // Some sanity checking, shaders wont supports any more than this
             if (maxLights > 8)
@@ -255,12 +410,18 @@
 
         /**
          * Renders given geometries to the default viewport using the
-         * given lights and camera.
+         * given lights and renderView.
          *
          * If shaderOverride is defined, it will used instead of the
          * materials own shader.
+         *
+         * @param scene {Scene} Scene to render.
+         * @param renderView {RenderView} RenderView to use
+         * @param lights {Array.<LightBatch> Lights to use
+         * @param batches {Array.<GeometryBatch> Geometries to use.
+         * @param shaderOverride {ShaderSource} Shader to override materials own shader with.
          */
-        _renderPass(camera, lights, batches, _shaderOverride) {
+        _renderPass(scene, renderView, lights, batches, _shaderOverride) {
             // TODO: pick the closest and most brighest lights and upload them as uniforms
 
             // TODO: Maybe add instancing support? Might be out of scope
@@ -268,7 +429,6 @@
             
             this.activeMaterial = null;
             this.activeShader = null;
-            this.activeCamera = null;
             this.activeMesh = null;
             
             let gl = this.glContext;
@@ -287,6 +447,7 @@
                 let geo = batch.geometry;
                 let mesh = batch.geometry.mesh;
                 let mat = batch.material;
+                let env = batch.envMap;
 
                 let drawType = GetDrawType(gl, mat);
 
@@ -303,6 +464,7 @@
                 let instanced = this.enableInstancing && mat.allowInstancing
                      && batch.transforms.length > MIN_INSTANCES_PER_BATCH;
 
+                // Add instancing define for the shader if we're using instancing.
                 if (instanced) {
                     this._bindMaterial(mat, new Map([...mat.defines, ["INSTANCING", null]]));
                 }
@@ -310,17 +472,26 @@
                     this._bindMaterial(mat, mat.defines);
                 }
 
+                // If the material binding failed we can't render.
+                //
+                // Only way the material binding can fails it that if the materials
+                // shader failed to compile, or does not exist. In this case we don't have
+                // an active shader.
                 if (!this.activeShader) {
                     continue;
                 }
 
                 this._bindMesh(mesh);
-                this._bindCamera(camera);
+                this._bindRenderView(renderView);
+                this._bindScene(scene);
                 this._bindLights(lights);
 
-                if (!this.activeMesh || !this.activeMaterial || !this.activeShader)
+                // Did the mesh fail to bind?
+                if (!this.activeMesh)
                     continue;
 
+                // Some sanity checking, the WebGL driver might do this on its own
+                // but never hurts to be sure.
                 if (this.activeMesh.indexCount < geo.indexOffset + geo.indexCount) {
                     console.log("Geometry indices out of range");
                     console.log(mesh);
@@ -330,6 +501,11 @@
 
                 this.performance.vertices += geo.indexCount * batch.transforms.length;
 
+                // Bind environment maps for reflections
+                if (env) {
+                    this._bindCubeMap("environmentMap", env.cubemap);
+                }
+
                 if (instanced) {
                     this._drawInstanced(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
@@ -337,12 +513,28 @@
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
 
-                if (gl.getError()) {
-                    console.log("Error rendering geometry");
+                // For some reason, this reaaally stalls the rendering, uncomment for debugging
+                // purposes only.
+
+                /*
+                let err = gl.getError();
+                if (err) {
+
+                    let errstr = ({
+                        [gl.INVALID_ENUM]: "Invalid enum",
+                        [gl.INVALID_VALUE]: "Invalid value",
+                        [gl.INVALID_OPERATION]: "Invalid operation",
+                        [gl.INVALID_FRAMEBUFFER_OPERATION]: "Invalid framebuffer operation",
+                        [gl.OUT_OF_MEMORY]: "Out of memory",
+                        [gl.CONTEXT_LOST_WEBGL]: "Context lost"
+                    })[err];
+
+                    console.log("Error rendering geometry " + errstr);
                     console.log(mesh);
                     console.log(geo);
                     debugger;
                 }
+                */
             }
         }
 
@@ -380,6 +572,11 @@
             let numTransforms = batch.transforms.length;
             let instanceNum = 0;
 
+            // Get the offset of the per instance model matrix
+            //
+            // First row the iInstanceModelMatrix is attribOffset + 0
+            // Second row is iInstanceModelMatrix is attribOffset + 1
+            // and so forth.
             let attribOffset = this.activeShader.attribLocations.instanceModelMatrix;
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.instancingBuffer);
@@ -453,28 +650,33 @@
 
         /**
          * Should be called after binding the shader.
-         * Sets the camera uniforms in the shader.
+         * Sets the view uniforms in the shader.
          */
-        _bindCamera(cam) {
+        _bindRenderView(renderView) {
             let uniforms = this.activeShader.uniformLocations;
             let gl = this.glContext;
 
-            this.activeCamera = cam;
+            this.renderView = renderView;
 
-            this.cameraViewMatrix = cam.node.worldTransform;
-            this.cameraProjectionMatrix = cam.projectionMatrix;
+            gl.uniformMatrix4fv(uniforms.viewMatrix, false, renderView.viewMatrix);
+            gl.uniformMatrix4fv(uniforms.projectionMatrix, false, renderView.projectionMatrix);
+            gl.uniformMatrix4fv(uniforms.inverseViewMatrix, false, renderView.inverseViewMatrix);
+            gl.uniformMatrix4fv(uniforms.viewProjectionMatrix, false, renderView.viewProjectionMatrix);
 
-            gl.uniformMatrix4fv(uniforms.viewMatrix, false, this.cameraViewMatrix);
-            gl.uniformMatrix4fv(uniforms.projectionMatrix, false, this.cameraProjectionMatrix);
-            gl.uniformMatrix4fv(uniforms.inverseViewMatrix, false, mat4.invert(this.cameraViewMatrix));
-            gl.uniformMatrix4fv(uniforms.viewProjectionMatrix, false,
-                mat4.multiply(this.cameraProjectionMatrix, this.cameraViewMatrix));
+            gl.uniform3fv(uniforms.viewForward, renderView.forward);
+            gl.uniform3fv(uniforms.viewPosition, renderView.position);
+        }
 
-            gl.uniform4fv(uniforms.ambientColor, cam.node.scene.ambientColor.toArray());
-            gl.uniform3fv(uniforms.viewForward, cam.node.forward);
-            gl.uniform3fv(uniforms.viewPosition, cam.node.worldPosition);
+        /**
+         * Should be called after binding the shader.
+         * Sets the scene wide uniforms
+         */
+        _bindScene(scene) {
+            let uniforms = this.activeShader.uniformLocations;
+            let gl = this.glContext;
 
-            let scene = cam.node.scene;
+            gl.uniform4fv(uniforms.ambientColor, scene.ambientColor.toArray());
+
             let fogColor = scene.fogColor.toArray();
 
             gl.uniform3f(uniforms.fogColor, fogColor[0], fogColor[1], fogColor[2]);
@@ -491,10 +693,7 @@
 
             this.performance.bindTransform++;
 
-            let m = mat4.multiply(this.cameraViewMatrix, transform);
-            // let m = mat4.multiply(transform, this.cameraViewMatrix);
-
-            // console.log(m);
+            let m = mat4.multiply(this.renderView.viewMatrix, transform);
 
             gl.uniformMatrix4fv(uniforms.modelViewMatrix, false, m);
             gl.uniformMatrix4fv(uniforms.modelMatrix, false, transform);
@@ -517,6 +716,7 @@
 
             let attribOffsets = this.activeShader.attribLocations;
 
+            // Just to be sure...
             for (let i = 0; i < 10; i++) {
                 gl.disableVertexAttribArray(i);
             }
@@ -555,6 +755,30 @@
         }
 
         /**
+         * Setups a cube map for rendering.
+         */
+        _bindCubeMap(name, texture) {
+            this.performance.bindTexture++;
+
+            let gl = this.glContext;
+            let textureLocations = this.activeShader.textureLocations;
+
+            let index = GetTextureSlotIndex(name);
+            if (index === null) {
+                return;
+            }
+
+            let tmp = texture ? texture._glTexture : null;
+            if (!tmp && this.defaultCubeMap) {
+                tmp = this.defaultCubeMap._glTexture;
+            }
+
+            gl.activeTexture(GetTextureSlotEnum(gl, index));
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tmp);
+            gl.uniform1i(textureLocations[name], index);
+        }
+
+        /**
          * Setups a material for rendering
          */
         _bindMaterial(material, defines) {
@@ -582,6 +806,43 @@
 
             for (let [name, texture] of material.textures.entries()) {
                 this._bindTexture(name, texture);
+            }
+
+            if (material.depthTest) {
+                gl.enable(gl.DEPTH_TEST);
+            }
+            else {
+                gl.disable(gl.DEPTH_TEST);
+            }
+
+            if (material.depthWrite) {
+                gl.depthMask(true);
+            }
+            else {
+                gl.depthMask(false);
+            }
+
+            if (material.cullFaces) {
+                gl.enable(gl.CULL_FACE);
+            }
+            else {
+                gl.disable(gl.CULL_FACE);
+            }
+
+            if (material.blendMode === "alpha") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            }
+            else if (material.blendMode === "add") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+            }
+            else if (material.blendMode === "multiply") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA);
+            }
+            else {
+                gl.disable(gl.BLEND);
             }
         }
 
@@ -736,6 +997,8 @@
 
                 fogParams: gl.getUniformLocation(program, "uFogParams"),
                 fogColor: gl.getUniformLocation(program, "uFogColor"),
+
+                debugTint: gl.getUniformLocation(program, "uTint"),
             };
 
             prog.textureLocations = {
@@ -743,6 +1006,7 @@
                 specularMap: gl.getUniformLocation(program, "sSpecularMap"),
                 ambientMap: gl.getUniformLocation(program, "sAmbientMap"),
                 normalMap: gl.getUniformLocation(program, "sNormalMap"),
+                environmentMap: gl.getUniformLocation(program, "sEnvironmentMap"),
             };
 
             // Lights are a bit of a special case.
@@ -808,6 +1072,10 @@
          * @returns string
          */
         _buildShaderDefines(defines) {
+            if (!defines) {
+                return "";
+            }
+
             return Array.from(defines.keys()).sort().map(function(key) {
                 let val = defines[key];
                 if (val) {

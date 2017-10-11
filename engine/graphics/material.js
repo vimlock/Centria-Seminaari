@@ -18,7 +18,7 @@
             this.opaque = true;
 
             /// Which faces to cull during rendering
-            this.cullFaces = "back";
+            this.cullFaces = true;
 
             /// Should this material use Z rejection?
             this.depthTest = true;
@@ -31,6 +31,9 @@
 
             /// Should the renderer be allowed use instancing when rendering?
             this.allowInstancing = true;
+
+            /// Should the material receive reflections from environment?
+            this.allowReflections = true;
 
             /// Which shader to use?
             this.shader = null;

@@ -1,11 +1,11 @@
-/* global Component, Mesh, Material */
+/* global Renderable, Mesh, Material */
 "use strict";
 
 (function (context) {
     /**
      * Model component.
      */
-    context.Model = class Model extends Component {
+    context.Model = class Model extends Renderable {
 
         constructor()  {
             super();
@@ -59,6 +59,14 @@
             else {
                 return null;
             }
+        }
+
+        getRenderGeometries() {
+            return this.mesh ? this.mesh.geometries : null;
+        }
+
+        getRenderMaterials() {
+            return this.materials;
         }
 
         serialize(serializer) {
