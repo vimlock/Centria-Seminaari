@@ -1,4 +1,5 @@
 /* global buildShaderKey, Color, EnvironmentMap, Light, Material, Renderable, ShaderProgram, mat4, vec3 */
+/* global CubeMap, makeCheckerTexture */
 "use strict";
 
 (function(context) {
@@ -105,6 +106,8 @@
             this.activeMaterial = null;
             this.activeMesh = null;
             this.activeShader = null;
+
+            this.defaultCubeMap = CubeMap.createFromPixels(64, makeCheckerTexture(Color.cyan, Color.black, 64));
 
             this.enableInstancing = true;
             this.enableReflections = true;
@@ -766,6 +769,9 @@
             }
 
             let tmp = texture ? texture._glTexture : null;
+            if (!tmp && this.defaultCubeMap) {
+                tmp = this.defaultCubeMap._glTexture;
+            }
 
             gl.activeTexture(GetTextureSlotEnum(gl, index));
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, tmp);
