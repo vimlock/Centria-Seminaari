@@ -1,19 +1,8 @@
-(function() {
+"use strict";
 
-    this.mat3 = {
-        multiplyVector(m, v) {
-            return [
-                m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
-                m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
-                m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
-            ];
-        }
-    }
+(function(context) {
 	
-	
-	//  Holds all function that return 16 cell arrays (4x4, 3d matrices)
-	this.mat4 = {
-		
+	context.mat4 = {
 		
 		identity: function() {
 			return [
@@ -277,6 +266,7 @@
 		
         getTranslation: function(m) {
             return [m[12], m[13], m[14]];
+<<<<<<< HEAD:engine/utility.js
         },
     };
 	
@@ -392,47 +382,6 @@
             this.b = b;
             this.a = a;
         }
-
-
-        static fromArray(a) {
-            return new Color(a[0], a[1], a[2], a[3]);
-        }
-
-
-        toArray() {
-            return [ this.r, this.g, this.b, this.a ];
-        }
-
-
-        toHex() {
-            return [ this.r * 255, this.g * 255, this.b * 255, this.a * 255 ].map(Math.round);
-        }
-
-
-        toHexString() {
-            return "#" + this.toHex().map(decToHexPadded).join("");
-        }
-
-        static get black()   { return new Color(0.0, 0.0, 0.0, 1.0); }
-        static get white()   { return new Color(1.0, 1.0, 1.0, 1.0); }
-        static get gray()    { return new Color(0.5, 0.5, 0.5, 1.0); }
-        static get red()     { return new Color(1.0, 0.0, 0.0, 1.0); }
-        static get green()   { return new Color(0.0, 1.0, 0.0, 1.0); }
-        static get blue()    { return new Color(0.0, 0.0, 1.0, 1.0); }
-        static get yellow()  { return new Color(1.0, 1.0, 0.0, 1.0); }
-        static get cyan()    { return new Color(0.0, 1.0, 1.0, 1.0); }
-        static get magenta() { return new Color(1.0, 0.0, 1.0, 1.0); }
-
-
-    };
-
-
-
-
-
-    this.decToHexPadded = function(dec) {
-        let tmp = dec.toString(16);
-        return tmp.length < 2 ? "0" + tmp : tmp;
     };
 	
 	
