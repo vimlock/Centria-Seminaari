@@ -233,9 +233,9 @@ function sceneTest() {
     };
 
 	engine.resources = new ResourceManager();
-    engine.resources.queueForLoading(Mesh, "engine/resources/monkey.obj");
-    engine.resources.queueForLoading(Texture, "engine/resources/MonkeyPink.png");
-    engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
+    engine.resources.queueForLoading(Mesh, "data/models/monkey.obj");
+    engine.resources.queueForLoading(Texture, "data/textures/MonkeyPink.png");
+    //engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
     engine.resources.queueForLoading(Mesh, "data/models/UVCube.obj");
     engine.resources.queueForLoading(Texture, "data/textures/CubeDiffuse.png");
@@ -279,7 +279,7 @@ function sceneTest() {
 	
     engine.resources.onAllLoaded(function() {
 
-        let t = engine.resources.getCached(Texture, "engine/resources/MonkeyPink.png");
+        let t = engine.resources.getCached(Texture, "data/textures/MonkeyPink.png");
 
         let m = new Material();
         m.shader = shader;
@@ -294,7 +294,7 @@ function sceneTest() {
             ["diffuseMap", t]
         ]);
 
-        spawnCubes(scene, engine.resources.getCached(Mesh, "engine/resources/monkey.obj"),
+        spawnCubes(scene, engine.resources.getCached(Mesh, "data/models/monkey.obj"),
             m, 50);
 
         let testNode = scene.createChild("Cube");

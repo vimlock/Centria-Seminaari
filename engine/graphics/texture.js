@@ -4,10 +4,12 @@
 (function(context) {
     
     
-    context.Texture = class Texture Resource {
+    context.Texture = class Texture extends Resource {
         
         
         constructor(imgSrc, glTexture) {
+            super();
+            
             this.imgSrc = imgSrc;
             this.glTexture  = glTexture;
         }
@@ -73,4 +75,5 @@
         
     };
 
+    
 })(this);
