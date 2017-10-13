@@ -213,8 +213,10 @@ precision mediump float;
 
 #endif
 
+#define TEXTURE_LOD_BIAS -1.0
+
 #if __VERSION__ >= 130
-    #define texture2D texture
+    #define texture2D(sampler, uv) texture(sampler, uv, TEXTURE_LOD_BIAS)
 #endif
 
 #ifdef VERTEX_COLORS
