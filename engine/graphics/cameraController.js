@@ -9,9 +9,9 @@
             
             this.camera = null;
             
-            //this.dx = 0;
-            //this.dy = 0;
-            //this.dz = -10;
+            this._pitch = 0;
+            this._yaw = 0;
+            this._roll = 0;
             
         }
         
@@ -35,8 +35,8 @@
             if (input["e"]) { dy += 0.1 * timeDelta; }
             if (input["q"]) { dy -= 0.1 * timeDelta; }
             
-            if(input["MouseDeltaX"]) { rx += input["MouseDeltaX"] * 0.005 * timeDelta; }
-            if(input["MouseDeltaY"]) { ry += input["MouseDeltaY"] * 0.005 * timeDelta; }
+            if(input["r"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * 0.01; }
+            if(input["r"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * 0.01; }
             
             input["MouseDeltaX"] = 0;
             input["MouseDeltaY"] = 0;
@@ -53,11 +53,28 @@
             // Think of a way to correct the roll
             // or a way to rotate so no roll is applied. Ever.
             
-            let pitch = Quaternion.fromAxisAngle(engine.scene.up, rx);
-            let yaw = Quaternion.fromAxisAngle(this.node.left, ry);
+            this._pitch += ry;
+            this._yaw += rx;
+            
+            if(this._pitch > Math.PI)
+                this._pitch -= (2 * Math.PI);
+            else if(this._pitch < -Math.PI)
+                this._pitch += (2 * Math.PI);
+            
+            if(this._yaw > Math.PI)
+                this._yaw -= (2 * Math.PI);
+            else if(this._yaw < -Math.PI)
+                this._yaw += (2 * Math.PI);
+            
+            console.log(this._pitch + ' ' + this._yaw);
+            
+            //let yaw = Quaternion.fromAxisAngle(this.node.up, this._yaw);
+            //let pitch = Quaternion.fromAxisAngle(this.node.left, this._pitch);
+            let yaw = Quaternion.fromEulers(this._yaw,0,0);
+            let pitch = Quaternion.fromEulers(0,0,this._pitch);
             let rot = Quaternion.multiply(pitch, yaw);
             
-            this.node.rotateLocal(rot);
+            this.node.localRotation = rot;
         }
         
     }

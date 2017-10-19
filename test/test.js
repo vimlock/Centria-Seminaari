@@ -121,7 +121,7 @@ function spawnCubes(scene, mesh, material, num)
 
 function initInput() {
 
-    let inputKeys = ["w", "a", "s", "d", "e", "q"];
+    let inputKeys = ["w", "a", "s", "d", "e", "q", "r"];
 
     let input = {
     };
