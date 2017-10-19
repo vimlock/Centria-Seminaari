@@ -35,8 +35,8 @@
             if (input["e"]) { dy += 0.1 * timeDelta; }
             if (input["q"]) { dy -= 0.1 * timeDelta; }
             
-            if(input["r"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * 0.01; }
-            if(input["r"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * 0.01; }
+            if(input["r"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * 0.04; }
+            if(input["r"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * 0.04; }
             
             input["MouseDeltaX"] = 0;
             input["MouseDeltaY"] = 0;
@@ -47,26 +47,20 @@
             );
             this.node.translateLocal(d);
             
-            
-            // TODO
-            // Some roll is soon applied
-            // Think of a way to correct the roll
-            // or a way to rotate so no roll is applied. Ever.
-            
             this._pitch += ry;
             this._yaw += rx;
             
-            if(this._pitch > Math.PI)
-                this._pitch -= (2 * Math.PI);
-            else if(this._pitch < -Math.PI)
-                this._pitch += (2 * Math.PI);
+            if(this._pitch > Math.PI * 0.5 - 0.05)
+                this._pitch = Math.PI * 0.5 - 0.05;
+            else if(this._pitch < -Math.PI * 0.5 + 0.05)
+                this._pitch = -Math.PI * 0.5 + 0.05;
             
             if(this._yaw > Math.PI)
                 this._yaw -= (2 * Math.PI);
             else if(this._yaw < -Math.PI)
                 this._yaw += (2 * Math.PI);
             
-            console.log(this._pitch + ' ' + this._yaw);
+            console.log(this._pitch);
             
             //let yaw = Quaternion.fromAxisAngle(this.node.up, this._yaw);
             //let pitch = Quaternion.fromAxisAngle(this.node.left, this._pitch);
