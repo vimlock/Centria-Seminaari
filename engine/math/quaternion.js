@@ -194,10 +194,10 @@
 			let aw = q1.w, ax = q1.x, ay = q1.y, az = q1.z;
 			let bw = q2.w, bx = q2.x, by = q2.y, bz = q2.z;
 			return new Quaternion(
+                aw * bw - ax * bx - ay * by - az * bz,
                 ax * bw + aw * bx + ay * bz - az * by,
                 ay * bw + aw * by + az * bx - ax * bz,
-                az * bw + aw * bz + ax * by - ay * bx,
-                aw * bw - ax * bx - ay * by - az * bz);
+                az * bw + aw * bz + ax * by - ay * bx );
 		}
         
         
