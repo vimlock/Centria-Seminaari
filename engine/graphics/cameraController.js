@@ -18,31 +18,28 @@
         updateCamera(timeDelta) {
 
             let input = engine.input;
-            /*
-            if (input["w"]) { this.dz += 0.01 * timeDelta; }
-            if (input["s"]) { this.dz -= 0.01 * timeDelta; }
-
-            if (input["d"]) { this.dx += 0.01 * timeDelta; }
-            if (input["a"]) { this.dx -= 0.01 * timeDelta; }
-
-            if (input["e"]) { this.dy += 0.01 * timeDelta; }
-            if (input["q"]) { this.dy -= 0.01 * timeDelta; }
-            */
+            
             let dx = 0.0;
             let dy = 0.0;
             let dz = 0.0;
             
-            let rx = Math.sin(timeDelta * 0.0001) * Math.PI * 2;
+            let rx = 0.0;//Math.sin(timeDelta * 0.0001) * Math.PI * 2;
             let ry = 0.0;
             
-            if (input["w"]) { dz -= 1.0; }
-            if (input["s"]) { dz += 1.0; }
+            if (input["w"]) { dz -= 0.1 * timeDelta; }
+            if (input["s"]) { dz += 0.1 * timeDelta; }
 
-            if (input["d"]) { dx += 1.0; }
-            if (input["a"]) { dx -= 1.0; }
+            if (input["d"]) { dx += 0.1 * timeDelta; }
+            if (input["a"]) { dx -= 0.1 * timeDelta; }
 
-            if (input["e"]) { dy += 1.0; }
-            if (input["q"]) { dy -= 1.0; }
+            if (input["e"]) { dy += 0.1 * timeDelta; }
+            if (input["q"]) { dy -= 0.1 * timeDelta; }
+            
+            if(input["MouseDeltaX"]) { rx += input["MouseDeltaX"] * 0.005 * timeDelta; }
+            if(input["MouseDeltaY"]) { ry += input["MouseDeltaY"] * 0.005 * timeDelta; }
+            
+            input["MouseDeltaX"] = 0;
+            input["MouseDeltaY"] = 0;
             
             let d = vec3.add(
                 vec3.add(vec3.scale(this.node.left, dx), vec3.scale(this.node.up, dy)),
@@ -50,10 +47,17 @@
             );
             this.node.translateLocal(d);
             
-            //console.log(this.node.worldRotation);
             
-            let r = Quaternion.multiply(Quaternion.fromEulers(rx, 0, 0), Quaternion.fromEulers(0, ry, 0));
-            this.node.rotateLocal(r);
+            // TODO
+            // Some roll is soon applied
+            // Think of a way to correct the roll
+            // or a way to rotate so no roll is applied. Ever.
+            
+            let pitch = Quaternion.fromAxisAngle(engine.scene.up, rx);
+            let yaw = Quaternion.fromAxisAngle(this.node.left, ry);
+            let rot = Quaternion.multiply(pitch, yaw);
+            
+            this.node.rotateLocal(rot);
         }
         
     }

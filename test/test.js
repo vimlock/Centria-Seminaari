@@ -343,10 +343,11 @@ function sceneTest() {
     cube.materialName = "DefaultMaterial";
 
     let camNode = scene.createChild("Camera");
-	camNode.translateLocal([0, 0, -5]);
-
+	camNode.translateLocal([0, 0, 15]);
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
+    let cameraController = camNode.createComponent(CameraController);
+    cameraController.camera = camera;
 
     let lightRotator = scene.createChild("LightRotator");
 
@@ -392,7 +393,7 @@ function sceneTest() {
         );
 
         scene.update();
-        updateCamera(camNode, timeDelta);
+        cameraController.updateCamera(timeDelta);
 
         let renderView = RenderView.fromCamera(camera);
 
