@@ -1,3 +1,4 @@
+/* global engine, Resource */
 "use strict";
 
 
@@ -5,11 +6,9 @@
     
     
     context.Texture = class Texture extends Resource {
-        
-        
+      
         constructor(imgSrc, glTexture) {
             super();
-            
             this.imgSrc = imgSrc;
             this.glTexture  = glTexture;
         }
@@ -20,7 +19,8 @@
             let image = new Image();
             image.onload = function() {
                 callback(image);
-            }
+            };
+
             image.src = sourceUrl;
         }
         

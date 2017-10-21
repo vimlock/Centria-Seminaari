@@ -248,7 +248,8 @@ function sceneTest() {
 	engine.resources = new ResourceManager();
     engine.resources.queueForLoading(Mesh, "data/models/monkey.obj");
     engine.resources.queueForLoading(Texture, "data/textures/MonkeyPink.png");
-    //engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
+  
+    // engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
     engine.resources.queueForLoading(Mesh, "data/models/UVCube.obj");
     engine.resources.queueForLoading(Texture, "data/textures/CubeDiffuse.png");

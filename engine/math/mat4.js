@@ -2,9 +2,7 @@
 
 (function(context) {
 	
-	
 	context.mat4 = {
-		
 		
 		identity: function() {
 			return [
@@ -269,9 +267,6 @@
         getTranslation: function(m) {
             return [m[12], m[13], m[14]];
         }
-        
-        
     };
-	
 	
 })(this);

@@ -49,8 +49,8 @@
 		<script src="engine/graphics/models.js"></script>
 		<script src="engine/graphics/scene.js"></script>
 		<script src="engine/graphics/shader.js"></script>
-		<script src="engine/graphics/texture.js"></script>
-        
+    <script src="engine/graphics/texture.js"></script>
+
         <!-- include test file -->
 		<script src="test/test.js"></script>
 	</body>
@@ -211,8 +211,10 @@ precision mediump float;
 
 #endif
 
+#define TEXTURE_LOD_BIAS -1.0
+
 #if __VERSION__ >= 130
-    #define texture2D texture
+    #define texture2D(sampler, uv) texture(sampler, uv, TEXTURE_LOD_BIAS)
 #endif
 
 #ifdef VERTEX_COLORS
