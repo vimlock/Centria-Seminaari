@@ -4,8 +4,10 @@
 
 (function(context) {
 
+
     context.Quaternion = class Quaternion
     {
+        
         constructor(w, x, y, z) {
             this.w = w;
             this.x = x;
@@ -38,6 +40,7 @@
 				0,             0,             0,             1 ];
         }
 
+        
         toMat3() {
 			let x = this.x,  y = this.y,  z = this.z,  w = this.w;
 			let x2 = x + x,  y2 = y + y,  z2 = z + z;
@@ -51,6 +54,7 @@
 				xz - wy,       yz + wx,       1 - (xx + yy),
             ];
         }
+        
         
         toEuler() {
             // TODO
@@ -76,6 +80,17 @@
 				s1 * c2 * c3 + c1 * s2 * s3,
 				c1 * s2 * c3 - s1 * c2 * s3
 			);
+        }
+        
+        
+        static fromAxisAngle(axis, angle) {
+            let x = axis[0];
+            let y = axis[1];
+            let z = axis[2];
+            let r = 1 / Math.sqrt(x*x + y*y + z*z);
+            let s = Math.sin(angle / 2);
+            
+            return new Quaternion(Math.cos(angle / 2), s * x * r, s * y * r, s * z * r);
         }
 
         
@@ -118,6 +133,7 @@
 			}
         }
 
+        
         static fromRotation(v1, v2) {
             // https://stackoverflow.com/a/1171995
             
@@ -130,18 +146,19 @@
                 angle, axis[0], axis[1], axis[2]
             );
 
-            q.normalize();
+            q.normalize;
 
             return q;
         }
+        
 
-		length() {
+		get length() {
 			return Math.sqrt(this.w * this.w + this.x * this.x + this.y * this.y + this.z * this.z);
 		}
         
         
-		normalize() {
-			let l = this.length();
+		get normalize() {
+			let l = this.length;
 			if(l > 0) {
                 this.w = this.w / l;
                 this.x = this.x / l;
@@ -156,21 +173,21 @@
 		}
         
 		
-		conjugate() {
+		get conjugate() {
             this.x = -this.x;
             this.y = -this.y;
             this.z = -this.z;
 		}
         
         
-        invert() {
-            let r = 1 / this.length();
+        get invert() {
+            let r = 1 / this.length;
             this.w = this.w * r;
             this.x = -this.x * r;
             this.y = -this.y * r;
             this.z = -this.z * r;
         }
-		
+        
         
 		static add(q1, q2) {
 			return new Quaternion(
@@ -194,13 +211,18 @@
 			let aw = q1.w, ax = q1.x, ay = q1.y, az = q1.z;
 			let bw = q2.w, bx = q2.x, by = q2.y, bz = q2.z;
 			return new Quaternion(
+                aw * bw - ax * bx - ay * by - az * bz,
                 ax * bw + aw * bx + ay * bz - az * by,
                 ay * bw + aw * by + az * bx - ax * bz,
-                az * bw + aw * bz + ax * by - ay * bx,
-                aw * bw - ax * bx - ay * by - az * bz);
+                az * bw + aw * bz + ax * by - ay * bx );
 		}
         
         
+        static copy(q) {
+            return new Quaternion(q.w, q.x, q.y, q.z);
+        }
+        
     };
 
+    
 })(this);

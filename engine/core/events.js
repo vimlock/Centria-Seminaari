@@ -22,7 +22,19 @@ class Event {
             this.listeners.length = 0;
         }
     }
+    
+    
+    static addToEvent(event, callback) {
+        engine.events[event]
+    }
 }
+
+
+
+
+
+
+
 
 engine.events = {};
 

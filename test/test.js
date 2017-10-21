@@ -121,7 +121,7 @@ function spawnCubes(scene, mesh, material, num)
 
 function initInput() {
 
-    let inputKeys = ["w", "a", "s", "d", "e", "q"];
+    let inputKeys = ["w", "a", "s", "d", "e", "q", "Mouse0", "Mouse1", "Mouse2"];
 
     let input = {
     };
@@ -149,7 +149,19 @@ function initInput() {
         }
 
     }, false);
-
+    
+    window.addEventListener("mousedown", function(ev) {
+        if(ev.button) {
+            input["Mouse" + ev.button] = true;
+        }
+    });
+    
+    window.addEventListener("mouseup", function(ev) {
+        if(ev.button) {
+            input["Mouse" + ev.button] = false;
+        }
+    });
+    
     window.addEventListener("mousemove", function(ev) {
         if (input["MouseX"] === undefined) {
             input["MouseX"] = ev.screenX;
@@ -166,6 +178,7 @@ function initInput() {
     }, false);
 
     return input;
+    
 }
 
 function updateCamera(camNode, timeDelta) {
@@ -216,7 +229,7 @@ function drawOriginAxes(debug, size, opacity=1.0) {
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
     engine.renderer.performance.fps = 0.0;
-    engine.input = initInput();
+    engine.inputManager = InputManager.initInput;
 
     engine.componentTypes = {
         "Camera": Camera,
@@ -235,6 +248,7 @@ function sceneTest() {
 	engine.resources = new ResourceManager();
     engine.resources.queueForLoading(Mesh, "data/models/monkey.obj");
     engine.resources.queueForLoading(Texture, "data/textures/MonkeyPink.png");
+  
     // engine.resources.queueForLoading(JSONFile, "data/scenes/testScene.json");
 
     engine.resources.queueForLoading(Mesh, "data/models/UVCube.obj");
@@ -343,10 +357,12 @@ function sceneTest() {
     cube.materialName = "DefaultMaterial";
 
     let camNode = scene.createChild("Camera");
-	camNode.translateLocal([0, 0, -5]);
-
+	camNode.translateLocal([0, 0, 15]);
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
+    let cameraController = camNode.createComponent(CameraController);
+    cameraController.camera = camera;
+    cameraController.input = engine.inputManager.input
 
     let lightRotator = scene.createChild("LightRotator");
 
@@ -392,7 +408,7 @@ function sceneTest() {
         );
 
         scene.update();
-        updateCamera(camNode, timeDelta);
+        cameraController.updateCamera(timeDelta);
 
         let renderView = RenderView.fromCamera(camera);
 
