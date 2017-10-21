@@ -229,7 +229,7 @@ function drawOriginAxes(debug, size, opacity=1.0) {
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
     engine.renderer.performance.fps = 0.0;
-    Event.initInput;
+    engine.inputManager = InputManager.initInput;
 
     engine.componentTypes = {
         "Camera": Camera,
@@ -361,7 +361,7 @@ function sceneTest() {
     camera.fieldOfView = 90.0;
     let cameraController = camNode.createComponent(CameraController);
     cameraController.camera = camera;
-    cameraController.input = engine.events.input
+    cameraController.input = engine.inputManager.input
 
     let lightRotator = scene.createChild("LightRotator");
 
