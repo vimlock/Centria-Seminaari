@@ -13,17 +13,20 @@
             this._yaw = 0;
             this._roll = 0;
             
+            this.input = null;
+            
         }
+        
         
         updateCamera(timeDelta) {
 
-            let input = engine.input;
+            let input = this.input;
             
             let dx = 0.0;
             let dy = 0.0;
             let dz = 0.0;
             
-            let rx = 0.0;//Math.sin(timeDelta * 0.0001) * Math.PI * 2;
+            let rx = 0.0;
             let ry = 0.0;
             
             if (input["w"]) { dz -= 0.1 * timeDelta; }
@@ -35,8 +38,8 @@
             if (input["e"]) { dy += 0.1 * timeDelta; }
             if (input["q"]) { dy -= 0.1 * timeDelta; }
             
-            if(input["r"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * 0.04; }
-            if(input["r"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * 0.04; }
+            if(input["Mouse1"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * 0.04; }
+            if(input["Mouse1"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * 0.04; }
             
             input["MouseDeltaX"] = 0;
             input["MouseDeltaY"] = 0;
@@ -60,13 +63,10 @@
             else if(this._yaw < -Math.PI)
                 this._yaw += (2 * Math.PI);
             
-            console.log(this._pitch);
-            
-            //let yaw = Quaternion.fromAxisAngle(this.node.up, this._yaw);
-            //let pitch = Quaternion.fromAxisAngle(this.node.left, this._pitch);
             let yaw = Quaternion.fromEulers(this._yaw,0,0);
             let pitch = Quaternion.fromEulers(0,0,this._pitch);
             let rot = Quaternion.multiply(pitch, yaw);
+            rot.normalize;
             
             this.node.localRotation = rot;
         }

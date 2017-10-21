@@ -121,7 +121,7 @@ function spawnCubes(scene, mesh, material, num)
 
 function initInput() {
 
-    let inputKeys = ["w", "a", "s", "d", "e", "q", "r"];
+    let inputKeys = ["w", "a", "s", "d", "e", "q", "Mouse0", "Mouse1", "Mouse2"];
 
     let input = {
     };
@@ -149,7 +149,19 @@ function initInput() {
         }
 
     }, false);
-
+    
+    window.addEventListener("mousedown", function(ev) {
+        if(ev.button) {
+            input["Mouse" + ev.button] = true;
+        }
+    });
+    
+    window.addEventListener("mouseup", function(ev) {
+        if(ev.button) {
+            input["Mouse" + ev.button] = false;
+        }
+    });
+    
     window.addEventListener("mousemove", function(ev) {
         if (input["MouseX"] === undefined) {
             input["MouseX"] = ev.screenX;
@@ -166,6 +178,7 @@ function initInput() {
     }, false);
 
     return input;
+    
 }
 
 function updateCamera(camNode, timeDelta) {
@@ -216,7 +229,7 @@ function drawOriginAxes(debug, size, opacity=1.0) {
 function sceneTest() {
     engine.renderer = new Renderer(engine.gl);
     engine.renderer.performance.fps = 0.0;
-    engine.input = initInput();
+    Event.initInput;
 
     engine.componentTypes = {
         "Camera": Camera,
@@ -348,6 +361,7 @@ function sceneTest() {
     camera.fieldOfView = 90.0;
     let cameraController = camNode.createComponent(CameraController);
     cameraController.camera = camera;
+    cameraController.input = engine.events.input
 
     let lightRotator = scene.createChild("LightRotator");
 
