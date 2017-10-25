@@ -13,6 +13,7 @@
     /// How many instances can be drawn in a single instanced draw call.
     const MAX_INSTANCES_PER_BATCH = 256;
 
+    /// Version string to prepend to each shader source.
     const SHADER_VERSION = "#version 300 es";
 
     /// Custom code that is prepended to every shader.
@@ -34,6 +35,10 @@
         }
     }
 
+    /**
+     * Converts a string representing a texture slot name into an uniform index.
+     * If the texture slot name does not exist, null is returned.
+     */
     function GetTextureSlotIndex(name) {
         switch (name) {
         case "diffuseMap":  return 0;
@@ -48,6 +53,9 @@
         }
     }
 
+    /**
+     * Convert a texture slot index into a WebGL texture slot.
+     */
     function GetTextureSlotEnum(gl, index) {
         // TODO: Can we just gl.TEXTURE0 + index? Might be undefined behaviour.
         switch(index) {
@@ -68,9 +76,18 @@
      * during rendering.
      */
     function GeometryBatch(geometry, envMap, material) {
+        /// Geometry to use when rendering this batch.
         this.geometry = geometry;
+
+        /// Environment map to use when rendering this batch.
+        /// Used for reflections.
         this.envMap = envMap;
+
+        /// Material to use when rendering this batch.
         this.material = material;
+        
+        /// Instances of this batch, every transform in this array is an invididual
+        /// Geometry instance
         this.transforms = [];
     }
 
@@ -82,6 +99,8 @@
         this.transform = transform;
         this.light = light;
         this.priority = -1.0;
+
+        // TODO: This could hold the generated shadow maps.
     }
 
     /**
@@ -107,9 +126,15 @@
             this.activeMesh = null;
             this.activeShader = null;
 
+            /// Create a default cubemap texture with a checker pattern
+            /// This can be used for debugging purposes to check for missing cubemaps.
             this.defaultCubeMap = CubeMap.createFromPixels(64, makeCheckerTexture(Color.cyan, Color.black, 64));
 
+            /// TODO: Setting this to true after the Renderer has been created
+            /// will crash because we would have no instancing buffer.
+            /// That shouldn't happen.
             this.enableInstancing = true;
+
             this.enableReflections = true;
 
             if (this.enableInstancing) {
@@ -130,6 +155,8 @@
         renderScene(scene, renderView, shaderOverride) {
             // Prepare scene for rendering
             
+            // Array of LightBatch, used to hold all the lights
+            // found in the scene.
             let lights = [];
             
             // Opaque and transparent materials should be kept separate
@@ -137,6 +164,7 @@
             let opaqueGeomBatches = [];
             let transparentGeomBatches = [];
 
+            // Array of EnvironmentMaps.
             let environmentMaps;
 
             // Look up the environment maps
@@ -180,7 +208,7 @@
             gl.clearColor( ...scene.background.toArray());
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            // TODO: Cull batches by bounding box or some other volume
+            // TODO: Cull batches by bounding box or some other bounding volume
 
             // TODO: Sort opaque batches front-to-back
             // TODO: Sort transparent batches back-to-front
@@ -188,61 +216,82 @@
             this.performance.numLights += lights.length;
             
             this._renderPass(scene, renderView, lights, opaqueGeomBatches, shaderOverride);
+
+            // TODO: We could handle rendering a custom skyboxes/skydomes here, before transparent
+            // geometries.
+            
             this._renderPass(scene, renderView, lights, transparentGeomBatches, shaderOverride);
         }
 
+        /**
+         * @param renderView {RenderView}
+         * @param debugRenderer {DebugRenderer}
+         */
         renderDebugLines(renderView, debugRenderer) {
 
+            // Nothing to do?
             if (debugRenderer._nextVertexIndex <= 0) {
                 return;
             }
 
             // Setup drawing state
             let shader = this._getShaderProgram(debugRenderer._shader);
+
+            // Shader not found? -> Nothing to do.
             if (!shader) {
                 return;
             }
 
             this._bindShader(shader);
+
+            // Shader compilation failed? -> Nothing to do.
             if (!this.activeShader) {
                 return;
             }
 
-
             debugRenderer.updateBuffers();
 
+            // Setup view for rendering.
             this._bindRenderView(renderView);
 
             let gl = this.glContext;
 
+            // Setup a sensible render state.
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
             gl.enable(gl.BLEND);
             gl.enable(gl.DEPTH_TEST);
             gl.disable(gl.CULL_FACE);
             gl.depthMask(false);
 
+            // Bind the vertices.
             gl.bindBuffer(gl.ARRAY_BUFFER, debugRenderer._vbo);
             gl.vertexAttribPointer(0, 3, gl.FLOAT, false, debugRenderer._vertexSize * 4, 0);
             gl.vertexAttribPointer(1, 4, gl.FLOAT, false, debugRenderer._vertexSize * 4, 3 * 4);
 
             // Draw faces
             if (debugRenderer._nextFaceIndex > 0) {
+                // Give faces a slight transparent tint, looks nicer this way.
                 gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 0.05);
 
+                // Bind face indices
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._faceIb);
+
                 gl.drawElements(gl.TRIANGLES, debugRenderer._nextFaceIndex, gl.UNSIGNED_SHORT, 0);
             }
             
             // Draw lines
             if (debugRenderer._nextLineIndex > 0) {
                 gl.uniform4f(shader.uniformLocations["debugTint"], 1.0, 1.0, 1.0, 1.0);
+
+                // Bind line indices.
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, debugRenderer._lineIb);
+
                 gl.drawElements(gl.LINES, debugRenderer._nextLineIndex, gl.UNSIGNED_SHORT, 0);
             }
         }
 
         /**
-         * Renders a scene to a cubemap
+         * Renders a scene to a cubemap.
          *
          * @param cubemap {CubeMap} 
          * @param scene {Scene}
@@ -262,28 +311,39 @@
 
             let gl = this.glContext;
 
+            // Setup a framebuffer to capture the render output
             let fb = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
+            // Setup a renderbuffer which we will use as the depth buffer for rendering.
             let rb = gl.createRenderbuffer();
             gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
             gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, cubemap._resolution, cubemap._resolution );
 
             gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
 
+            // Setup the viewport to cubemap resolution.
             gl.viewport(0, 0, cubemap._resolution, cubemap._resolution);
 
+            // Do the rendering, each face of the cubemap needs to be rendererd seperately.
             for (let i = 0; i < 6; ++i) {
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemap._glTexture);
+
+                // Setup the target face of the cubemap as the color attachment for the framebuffer.
+                // This way the result of the render gets stored in the cubemap face.
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap._glTexture, 0);
 
+                // Do the rendering.
                 this.renderScene(scene, views[i]);
+
                 console.log("Render cubemap face " + i);
             }
 
+            // Do cleanup.
             gl.bindRenderbuffer(gl.RENDERBUFFER, null);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+            // Restore the viewport.
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         }
 
@@ -300,11 +360,13 @@
             let materials = renderable.getRenderMaterials();
             let geometries = renderable.getRenderGeometries();
 
+            // Skip renderables without materials or geometries, can't draw without them.
             if (!materials || !geometries)
                 return;
 
             this.performance.numModels++;
 
+            // Select the environment map for renderable.
             let envMap = null;
             if (this.enableReflections) {
 
@@ -329,10 +391,12 @@
 
             let worldTransform = renderable.node.worldTransform; 
 
+            // Queue all the geometries from the renderable.
             for (let i = 0; i < geometries.length; ++i) {
                 let geom = geometries[i];
                 let mat = materials[i] || this.defaultMaterial;
 
+                // Skip missing geometries and materials
                 if (!geom || !mat) {
                     continue;
                 }
@@ -433,10 +497,10 @@
             
             let gl = this.glContext;
 
+            // Setup a sensible default render state
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
             gl.enable(gl.DITHER);
-
             gl.depthMask(true);
             gl.frontFace(gl.CW);
 
@@ -506,6 +570,7 @@
                     this._bindCubeMap("environmentMap", env.cubemap);
                 }
 
+                // Use instanced draw calls, if possible.
                 if (instanced) {
                     this._drawInstanced(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
@@ -513,8 +578,10 @@
                     this._drawIndividual(drawType, batch, geo.indexCount, mesh.indexType, geo.indexOffset);
                 }
 
-                // For some reason, this reaaally stalls the rendering, uncomment for debugging
+                // For some reason, this reaaally slows down the rendering, uncomment for debugging
                 // purposes only.
+                //
+                // This might be because gl.getError() forces WebGL driver to sync with GPU.
 
                 /*
                 let err = gl.getError();
@@ -591,7 +658,7 @@
             for (let index = 0; index < batch.transforms.length; ++index) {
                 let transform = batch.transforms[index];
 
-                // Concatenate the matrices into a buffer
+                // Concatenate the matrices into a vertex buffer and stream them to GPU.
                 let offset = instanceNum * 16;
                 for (let k = 0; k < 16; k++) {
                     matrices[offset + k] = transform[k];
