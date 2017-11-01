@@ -37,7 +37,7 @@
 
             /// Which shader to use?
             this.shader = null;
-            this.drawType = "triangles"; // points|triangles
+            this.drawType = "triangles"; // points|lines|triangles
 
             /// Texture mapping.
             this.textures = new Map();

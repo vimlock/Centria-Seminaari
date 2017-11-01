@@ -29,7 +29,9 @@
         switch (material.drawType) {
         case "points":
             return gl.POINTS;
-        case "wireframe":
+        case "lines":
+            return gl.LINES;
+        case "wireframe": // TODO
         default:
             return gl.TRIANGLES;
         }
