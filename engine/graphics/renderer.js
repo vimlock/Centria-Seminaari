@@ -28,6 +28,8 @@
         switch (material.drawType) {
         case "points":
             return gl.POINTS;
+        case "lines":
+            return gl.LINES;
         case "wireframe":
         default:
             return gl.TRIANGLES;

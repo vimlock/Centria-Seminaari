@@ -355,7 +355,31 @@ function sceneTest() {
     cube.meshName = "ColorCube";
     cube.material = material;
     cube.materialName = "DefaultMaterial";
-
+    
+    
+    
+    
+    // Testing normalRenderer with cube
+    let aCubeNode = scene.createChild("aCubeNode");
+    aCubeNode.localPosition = [ -5, 0, 0 ];
+    let aCubeModel = aCubeNode.createComponent(Model);
+    aCubeModel.mesh = mesh;
+    aCubeModel.meshName = "SomeCube";
+    aCubeModel.material = material;
+    aCubeModel.materialName = "DefaultMaterial";
+    let aCubeNormal = aCubeNode.createComponent(NormalRenderer);
+    aCubeNormal.meshName = "SomeCube";
+    
+    material = new Material();
+    material.shader = shader;
+    material.drawType = "lines";
+    
+    aCubeNormal.material = material;
+    aCubeNormal.materialName = "DefaultMaterial";
+    aCubeNormal.generateMesh(aCubeModel);
+    
+    
+    
     let camNode = scene.createChild("Camera");
 	camNode.translateLocal([0, 0, 15]);
     let camera = camNode.createComponent(Camera);
