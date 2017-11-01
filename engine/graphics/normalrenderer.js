@@ -29,24 +29,43 @@
             
             let mesh = model.mesh;
             let vertexData = mesh.vertexData;
-            let vertexSize = mesh.vertexSize;
-            let numVertices = mesh.indexCount;
-            let vertexDataLength = vertexData.length; // or vertexSize * numVertices
+            
+            let vertexSize = mesh.vertexSize / 4;
+            let vertexDataLength = vertexData.length;
+            let numVertices = vertexDataLength / vertexSize;
+            
+            // Find offset of position and normal
+            let pOffset = null;
+            let nOffset = null;
+            for(let i of mesh.attributes) {
+                if(i.name === "position") {
+                    pOffset = i.offset;
+                } else if(i.name === "normal") {
+                    nOffset = i.offset;
+                }
+            }
             
             let lineData = new Float32Array(numVertices * 6); // Original position AND original position + normalized normalvector
             let lc = 0;
-            let indices = new Int16Array(numVertices);
+            let indices = new Int16Array(numVertices * 2);
+            let ic = 0;
+            let offsetp, offsetn;
             
             for(let i = 0; i < vertexDataLength; i += vertexSize) {
-                lineData[lc++] = vertexData[i + 0];
-                lineData[lc++] = vertexData[i + 1];
-                lineData[lc++] = vertexData[i + 2];
+                offsetp = pOffset;
+                lineData[lc++] = vertexData[i + offsetp++];
+                lineData[lc++] = vertexData[i + offsetp++];
+                lineData[lc++] = vertexData[i + offsetp];
                 
-                lineData[lc++] = vertexData[i + 0] + vertexData[i + 5];
-                lineData[lc++] = vertexData[i + 1] + vertexData[i + 6];
-                lineData[lc++] = vertexData[i + 2] + vertexData[i + 7];
+                offsetp = pOffset;
+                offsetn = nOffset;
+                lineData[lc++] = vertexData[i + offsetp++] + vertexData[i + offsetn++];
+                lineData[lc++] = vertexData[i + offsetp++] + vertexData[i + offsetn++];
+                lineData[lc++] = vertexData[i + offsetp] + vertexData[i + offsetn];
+                
+                indices[ic] = ic++;
+                indices[ic] = ic++;
             }
-            
             
             let gl = engine.gl;
             // Upload the vertices to the gpu
@@ -65,8 +84,8 @@
             nmesh.indexType = gl.UNSIGNED_SHORT;
             nmesh.indexBuffer = ib;
             nmesh.vertexBuffer = vb;
-            nmesh.vertexSize = 6;
-            nmesh.attributes = [ new MeshAttribute("position", 0, 3), new MeshAttribute("position", 3, 3) ];
+            nmesh.vertexSize = 3 * 4;
+            nmesh.attributes = [ new MeshAttribute("position", 0, 3) ];
             nmesh.indexCount = indices.length;
             nmesh.geometries = [ new Geometry(0, indices.length, null) ];
             nmesh.geometries[0].mesh = nmesh;
