@@ -172,8 +172,8 @@
             }
         }
 
-        get worldRotaton() {
-            return Quaternion.fromMat4(this.transform);
+        get worldRotation() {
+            return Quaternion.fromMat4(this.worldTransform);
         }
 
         set worldRotation(rotation) {
