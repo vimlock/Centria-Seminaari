@@ -22,6 +22,19 @@
 				0,               0, (near + far) * rangeInv,   -1,
 				0,               0, near * far * rangeInv * 2, 0 ];
 		},
+        
+        
+        orthographic: function(left, right, bottom, top, near, far) {
+            let lr = 1 / (left - right);
+            let bt = 1 / (bottom - top);
+            let nf = 1 / (near - far);
+            
+            return [
+            2 * lr,               0,                   0,                0,
+            0,                    2 * bt,              0,                0,
+            0,                    0,                   2 * nf,           0,
+            (left + right) * lr, (top + bottom) * bt, (far + near) * nf, 1 ];
+        },
 		
 		
 		lookAt: function(camPos, target, up) {
@@ -30,10 +43,10 @@
 			var yAxis = vec3.cross(zAxis, xAxis);
 			
 			return [
-				xAxis[0],  xAxis[1],  xAxis[2],	0,
-				yAxis[0],  yAxis[1],  yAxis[2],	0,
-				zAxis[0],  zAxis[1],  zAxis[2],	0,
-				camPos[0], camPos[1], camPos[2],	1 ];
+				xAxis[0],  xAxis[1],  xAxis[2],  0,
+				yAxis[0],  yAxis[1],  yAxis[2],  0,
+				zAxis[0],  zAxis[1],  zAxis[2],  0,
+				camPos[0], camPos[1], camPos[2], 1 ];
 		},
 		
 		

@@ -20,6 +20,7 @@ const RadToDeg = 1.0 / DegToRad;
             this.orthographicSize = 10.0;
 
             this.aspectRatio = 0.5;
+            //this.aspectRatio = window.innerWidth / window.innerHeight // True aspect ratio
 
             /// Field of view in degrees, when using perspective projection
             this.fieldOfView = 60.0;
@@ -36,7 +37,10 @@ const RadToDeg = 1.0 / DegToRad;
          */
         get projectionMatrix() {
             if (this.orthographic) {
-                return mat4.identity(); // TODO
+                let width = 50;
+                let asRa = window.innerWidth / window.innerHeight;
+                let height = width / asRa;
+                return mat4.orthographic(width, 0, height, 0, 0.1, 100); // TODO
             }
             else {
                 return mat4.perspective(Math.PI * 0.25,
