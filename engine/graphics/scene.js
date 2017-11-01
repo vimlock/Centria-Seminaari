@@ -201,19 +201,19 @@
             // TODO
         }
 
-        get forward() {
-            let m = this.worldTransform;
-            return [m[2], m[6], m[10]];
-        }
-
         get left() {
             let m = this.worldTransform;
-            return [m[0], m[1], m[3]];
+            return [m[0], m[1], m[2]];
         }
 
         get up() {
             let m = this.worldTransform;
-            return [m[1], m[5], m[9]];
+            return [m[4], m[5], m[6]];
+        }
+
+        get forward() {
+            let m = this.worldTransform;
+            return [m[8], m[9], m[10]];
         }
 
         createChild(name) {
