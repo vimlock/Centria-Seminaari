@@ -59,9 +59,9 @@
                 
                 offsetp = pOffset;
                 offsetn = nOffset;
-                lineData[lc++] = vertexData[i + offsetp++] + vertexData[i + offsetn++];
-                lineData[lc++] = vertexData[i + offsetp++] + vertexData[i + offsetn++];
-                lineData[lc++] = vertexData[i + offsetp] + vertexData[i + offsetn];
+                lineData[lc++] = vertexData[i + offsetp++] + (vertexData[i + offsetn++] * 0.1);
+                lineData[lc++] = vertexData[i + offsetp++] + (vertexData[i + offsetn++] * 0.1);
+                lineData[lc++] = vertexData[i + offsetp] + (vertexData[i + offsetn] * 0.1);
                 
                 indices[ic] = ic++;
                 indices[ic] = ic++;
@@ -91,18 +91,14 @@
             nmesh.geometries[0].mesh = nmesh;
             
             this.mesh = nmesh;
-            console.log(nmesh);
             
         }
         
-        
-        getDrawBatches() {
-            
-        }
         
         getRenderMaterials() {
             return [ this.material ];
         }
+        
         
         getRenderGeometries() {
             if(this.mesh)
