@@ -39,7 +39,7 @@ class Event {
 engine.events = {};
 
 
-
+/*
 
 
 engine.events.windowResizeHandler = function() {
@@ -73,3 +73,4 @@ window.addEventListener("resize", engine.events.windowResizeHandler, false);
 window.addEventListener("load", engine.events.windowOnloadHandler, false);
 document.getElementById("filedrop").addEventListener("dragover", engine.events.handlerDragOver, false);
 document.getElementById("filedrop").addEventListener("drop", engine.filehandler.handleFileUpload, false);
+*/

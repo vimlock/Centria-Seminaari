@@ -56,6 +56,19 @@
             this.defines = new Map();
         }
 
+        clone() {
+            let c = new Material();
+
+            Object.assign(c, this);
+
+            // Prevent shared references
+            c.textures = new Map(this.textures);
+            c.shaderUniforms = new Map(this.shaderUniforms);
+            c.defines = new Map(this.defines);
+
+            return c;
+        }
+
         /**
          * Enables a preprocessing directive for the shader
          *

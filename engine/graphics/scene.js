@@ -59,9 +59,15 @@
             }
         }
 
-        update() {
+        update(timeDelta) {
+            for (let component of this.components) {
+                if (component.update) {
+                    component.update(timeDelta);
+                }
+            }
+
             for (let child of this.children) {
-                child.update();
+                child.update(timeDelta);
             }
         }
 

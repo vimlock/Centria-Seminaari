@@ -1,0 +1,81 @@
+
+body {
+    background-color: #111111;
+}
+
+.panel {
+    border: 0px solid;
+    border-left-color: #444444;
+    border-left-width: 1px;
+    background-color: #222222;
+}
+
+#side-panel {
+    color: #EEEEEE;
+
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    bottom: 0px;
+    width: 300px;
+    padding:1em;
+    box-sizing: border-box;
+    /* width: 285px; */
+
+    /* padding-left: 15px;*/
+}
+
+#scene-view {
+    position: absolute;
+    top: 0px;
+    left: 300px;
+    right: 0px;
+    bottom: 0px;
+}
+
+canvas {
+	position: relative;
+    display: block;
+
+    width: 100%;
+    height:100%;
+
+	background-color: #1A1A1A;
+}
+
+#fps-counter {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    color: #EEEEEE;
+    font-family: "Lucida Console", Monaco, monospace;
+}
+
+.scene-graph-node {
+    font-family: "Lucida Console", Monaco, monospace;
+}
+
+.scene-graph-node span {
+    cursor:pointer;
+}
+
+.scene-node-enabled {
+    color: #EEEEEE;
+}
+
+.scene-node-disabled {
+    color: #AAAAAA;
+}
+
+.scene-node-selected {
+    color: #7FFFD4;
+    text-decoration: underline;
+}
+
+.properties {
+    font-family: "Lucida Console", Monaco, monospace;
+    padding: 1em;
+}
+
+.component {
+}

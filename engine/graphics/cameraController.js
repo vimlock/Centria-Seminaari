@@ -17,6 +17,10 @@
             
         }
         
+        update(timeDelta) {
+            // Terrible hack
+            this.updateCamera(timeDelta);
+        }
         
         updateCamera(timeDelta) {
 
