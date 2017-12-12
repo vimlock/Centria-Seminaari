@@ -59,7 +59,7 @@ function random(scale) {
     return ((Math.random() * 2.0) - 1.0) * scale;
 }
 
-function spawnEyeballs(scene, mesh, material, count)
+function spawnEyeballs(scene, mesh, material, count, spread)
 {
     for (let i = 0; i < count; ++i) {
 
@@ -67,7 +67,7 @@ function spawnEyeballs(scene, mesh, material, count)
 
         let scale = 8 + random(4);
 
-        node.worldPosition = [ random(75.0), random(75.0), random(75.0) ];
+        node.worldPosition = [ random(spread), random(spread), random(spread) ];
         node.localScale = [ scale, scale, scale ];
 
         node.localRotation = Quaternion.fromEulers(
@@ -238,7 +238,7 @@ function makeDefaultScene() {
             ["specularMap", res.getCached(Texture, "data/textures/Rog_Specular.png")],
         ]);
 
-        spawnEyeballs(scene, eyeMesh, eyeMaterial, 50);
+        spawnEyeballs(scene, eyeMesh, eyeMaterial, 1, 0);
     });
 
     engine.resources.onAllLoaded(function() {
