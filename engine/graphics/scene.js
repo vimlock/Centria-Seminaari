@@ -1,4 +1,4 @@
-/* global engine, Color, vec3, mat4, Quaternion, Serialize, Deserialize */
+/* global engine, Event, Color, vec3, mat4, Quaternion, Serialize, Deserialize */
 
 "use strict";
 
@@ -227,6 +227,7 @@
             child.scene = this.scene;
 
             this.scene._registerNode(child);
+            this.scene._markHierarchyModified();
 
             child.setParent(this);
 
@@ -235,6 +236,7 @@
 
         removeChild(child) {
             this.removeChildAt(this.children.indexOf(child));
+            this.scene._markHierarchyModified();
         }
 
         removeChildAt(n) {
@@ -243,6 +245,7 @@
             }
 
             this.children.splice(n, 1);
+            this.scene._markHierarchyModified();
         }
 
         setParent(parent, keepTransform=true) {
@@ -266,6 +269,8 @@
 
             if (!keepTransform || keepTransform)
                 this._markWorldTransformDirty();
+
+            this.scene._markHierarchyModified();
         }
 
         translateLocal(offset) {
@@ -531,6 +536,25 @@
 
             /// Used to generate unique component ids.
             this.nextNodeId = 1;
+
+            /// Flag which is set when scene hierarchy is modified.
+            /// Scene nodes are added, removed, or re-parented
+            this._modified = false;
+
+            /// Invoked after scene update, if the scene hiearchy has become dirty.
+            this.onModified = new Event(false);
+        }
+
+        /**
+         * Override from SceneNode.update
+         */
+        update(timeDelta) {
+            super.update(timeDelta);
+
+            if (this._modified) {
+                this.onModified.invoke();
+                this._modified = false;
+            }
         }
 
         /**
@@ -709,6 +733,11 @@
             }
 
             return c;
+        }
+
+        _markHierarchyModified()
+        {
+            this._modified = true;
         }
 
         /**
