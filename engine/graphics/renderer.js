@@ -31,7 +31,7 @@
             return gl.POINTS;
         case "lines":
             return gl.LINES;
-        case "wireframe": // TODO
+        case "wireframe":
         default:
             return gl.TRIANGLES;
         }

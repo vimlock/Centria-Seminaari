@@ -39,6 +39,8 @@
 
             this.indexBuffer = null;
             this.vertexBuffer = null;
+            
+            this.vertexData = null;
 
             // Describes the contents of the vertex buffer
             this.attributes = [];
@@ -105,7 +107,8 @@
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
             let mesh = new Mesh();
-
+            
+            mesh.vertexData = vertices;
             mesh.indexType = gl.UNSIGNED_SHORT;
             mesh.indexBuffer = ib;
             mesh.vertexBuffer = vb;
