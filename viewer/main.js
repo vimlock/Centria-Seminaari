@@ -7,6 +7,7 @@
 /* global Viewer, updateSceneGraph, updateProperties */
 /* global InputManager */
 /* global CameraController */
+/* global DegToRad */
 
 "use strict";
 
@@ -174,6 +175,7 @@ function makeDefaultScene() {
     // Global scene settings to add some mood to the scene.
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
     scene.fogColor = new Color(0.15, 0.15, 0.15, 1.0);
+    scene.fogStart = 200.0;
     scene.fogDistance = 80.0;
 
     // Create a light for some illumination.
@@ -208,6 +210,7 @@ function makeDefaultScene() {
     let cameraController = camNode.createComponent(CameraController);
     cameraController.camera = camera;
     cameraController.input = engine.inputManager.input;
+    cameraController.turnSpeed = 0.5 * DegToRad;
 
     scene.camera = camera;
 
