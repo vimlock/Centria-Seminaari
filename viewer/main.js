@@ -109,6 +109,7 @@ function initBuiltinResources() {
     normalDebugMaterial.shader = defaultShader;
     normalDebugMaterial.drawType = "lines";
     normalDebugMaterial.allowReflections = false;
+    normalDebugMaterial.diffuseColor = new Color(0.5, 1.0, 0.9, 1.0);
 
     engine.resources.addBuiltinResource("DebugNormal", normalDebugMaterial);
 
