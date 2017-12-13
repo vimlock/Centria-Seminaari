@@ -213,6 +213,7 @@ function makeDefaultScene() {
     camNode.translateLocal([0, 0, -5]);
     let camera = camNode.createComponent(Camera);
     camera.fieldOfView = 90.0;
+    camera.farPlane = 300.0;
 
     let cameraController = camNode.createComponent(CameraController);
     cameraController.camera = camera;
