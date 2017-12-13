@@ -366,12 +366,22 @@
          *
          * If no component exists with the given type, no action is performed.
          */
-        removeComponent(_type) {
-            // TODO
+        removeComponent(type) {
+            let index = this.components.findIndex(function(comp) {
+                return comp instanceof type;
+            });
+
+            if (index >= 0) {
+                console.log(this.components[index]);
+            }
+
+            this.removeComponentAt(index);
         }
 
-        removeComponentAt(_n) {
-            // TODO
+        removeComponentAt(n) {
+            if (n >= 0) {
+                this.components.splice(n, 1);
+            }
         }
 
         /**
@@ -529,7 +539,7 @@
             this.nodes = new Map();
             
             /// Mapping for quick component access by id.
-            this.components = new Map();
+            this.componentMapping = new Map();
 
             /// Used to generate unique node ids.
             this.nextComponentId = 1;
@@ -714,7 +724,7 @@
          * @returns Component if found, null if the component was not found.
          */
         getComponentById(id) {
-            return this.components.get(id);
+            return this.componentMapping.get(id);
         }
 
         /**
@@ -726,7 +736,7 @@
         getAllComponents(type) {
             let c = [];
 
-            for (let [, component] of this.components) {
+            for (let [, component] of this.componentMapping) {
                 if (component instanceof type) {
                     c.push(component);
                 }
@@ -764,14 +774,14 @@
             let id = this.nextComponentId++;
 
             comp.id = id;
-            this.components.set(id, comp);
+            this.componentMapping.set(id, comp);
         }
 
         /**
          * Called when a component is removed from the scene.
          */
         _unregisterComponent(comp) {
-            this.components.delete(comp.id);
+            this.componentMapping.delete(comp.id);
         }
     };
 
