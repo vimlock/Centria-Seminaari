@@ -35,4 +35,8 @@ function renderPanel(viewer, root) {
     root.appendChild(boolCheckbox("enable-reflections", "Enable Reflections"));
     root.appendChild(boolCheckbox("enable-normalmaps", "Enable Normal Maps"));
     root.appendChild(boolCheckbox("enable-instancing", "Enable Instancing"));
+    root.appendChild(boolCheckbox("enable-fog", "Enable Fog"));
+
+    root.appendChild(boolCheckbox("enable-ambient", "Ambient Lighting"));
+    root.appendChild(boolCheckbox("enable-direct", "Direct Lighting"));
 }

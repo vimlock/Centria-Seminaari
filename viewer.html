@@ -341,13 +341,7 @@
                 diff.rgb *= vColor;
             #endif
 
-            #ifdef LIGHTS
-                vec4 spec = uSpecularColor;
-
-                #ifdef SPECMAP
-                    spec.rgb *= texture2D(sSpecularMap, vTexCoord).rgb;
-                #endif
-
+            #ifdef NORMALS
                 #ifdef NORMALMAP
                     vec3 normal = UnpackNormal(texture2D(sNormalMap, vTexCoord).xyz);
                     mat3 tbnMatrix = mat3(vTangent, vBitangent, vNormal);
@@ -356,17 +350,28 @@
                 #else
                     vec3 normal = normalize(vNormal);
                 #endif
+            #endif
+
+
+            #ifdef LIGHTS
+                vec4 spec = uSpecularColor;
+
+                #ifdef SPECMAP
+                    spec.rgb *= texture2D(sSpecularMap, vTexCoord).rgb;
+                #endif
 
                 vec4 col = vec4(GetLighting(normal, diff, spec).rgb, diff.a);
             #else
                 vec4 col = diff;
             #endif
 
-            #ifdef AMBIENTMAP
-                float ambientIntensity = texture2D(sAmbientMap, vTexCoord).r;
-                col.rgb += diff.rgb * uAmbientColor.rgb * ambientIntensity;
-            #else
-                col.rgb += diff.rgb * uAmbientColor.rgb;
+            #ifdef AMBIENT
+                #ifdef AMBIENTMAP
+                    float ambientIntensity = texture2D(sAmbientMap, vTexCoord).r;
+                    col.rgb += diff.rgb * uAmbientColor.rgb * ambientIntensity;
+                #else
+                    col.rgb += diff.rgb * uAmbientColor.rgb;
+                #endif
             #endif
 
             #ifdef EMSSIONMAP

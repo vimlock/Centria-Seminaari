@@ -24,6 +24,10 @@ class Viewer {
             [ "enable-reflections", true ],
             [ "enable-normalmaps", true ],
             [ "enable-instancing", true ],
+            [ "enable-fog", true ],
+
+            [ "enable-ambient", true ],
+            [ "enable-direct", true ],
         ]);
     }
 
@@ -144,13 +148,26 @@ class Viewer {
         renderer.enableInstancing = this._renderSettings.get("enable-instancing");
 
         let shaderDisables = new Set();
+
+        if (!this._renderSettings.get("enable-fog"))
+            shaderDisables.add("FOG");
+
         if (!this._renderSettings.get("enable-normalmaps"))
             shaderDisables.add("NORMALMAP");
+
+        if (!this._renderSettings.get("enable-ambient"))
+            shaderDisables.add("AMBIENT");
+
+        if (!this._renderSettings.get("enable-direct"))
+            shaderDisables.add("LIGHTS");
 
         renderer.disabledDefines = shaderDisables;
 
         if (this._renderSettings.get("show-normals")) {
             this._scene.walkAll(function(node) {
+                if (node.getComponent(NormalRenderer))
+                    return;
+
                 if (node.getComponent(Model)) {
                     node.createComponent(NormalRenderer);
                 }

@@ -182,7 +182,7 @@ function makeDefaultScene() {
     // Global scene settings to add some mood to the scene.
     scene.ambientColor = new Color(0.1, 0.01, 0.01, 1.0);
     scene.fogColor = new Color(0.15, 0.15, 0.15, 1.0);
-    scene.fogStart = 200.0;
+    scene.fogStart = 100.0;
     scene.fogDistance = 80.0;
 
     // Create a light for some illumination.
@@ -238,6 +238,7 @@ function makeDefaultScene() {
         eyeMaterial.enableDefine("FOG");
         eyeMaterial.enableDefine("NORMALMAP");
         eyeMaterial.enableDefine("SPECMAP");
+        eyeMaterial.enableDefine("AMBIENT");
         
         eyeMaterial.specularColor = new Color(2, 2, 2, 40);
 
@@ -248,6 +249,8 @@ function makeDefaultScene() {
         ]);
 
         spawnEyeballs(scene, eyeMesh, eyeMaterial, 1, 0);
+        spawnEyeballs(scene, eyeMesh, eyeMaterial, 20, 150);
+
     });
 
     engine.resources.onAllLoaded(function() {
