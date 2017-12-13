@@ -371,10 +371,6 @@
                 return comp instanceof type;
             });
 
-            if (index >= 0) {
-                console.log(this.components[index]);
-            }
-
             this.removeComponentAt(index);
         }
 
