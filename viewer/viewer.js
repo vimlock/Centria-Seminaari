@@ -27,6 +27,7 @@ class Viewer {
             [ "enable-instancing", true ],
             [ "enable-fog", true ],
 
+            [ "enable-diffuse", true ],
             [ "enable-ambient", true ],
             [ "enable-direct", true ],
 
@@ -154,6 +155,9 @@ class Viewer {
 
         if (!this._renderSettings.get("enable-fog"))
             shaderDisables.add("FOG");
+
+        if (!this._renderSettings.get("enable-diffuse"))
+            shaderDisables.add("DIFFUSEMAP");
 
         if (!this._renderSettings.get("enable-normalmaps"))
             shaderDisables.add("NORMALMAP");

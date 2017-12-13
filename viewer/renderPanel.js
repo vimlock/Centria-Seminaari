@@ -58,6 +58,7 @@ function renderPanel(viewer, root) {
     root.appendChild(boolCheckbox("show-wireframe", "Show Wire"));
 
     root.appendChild(boolCheckbox("enable-reflections", "Enable Reflections"));
+    root.appendChild(boolCheckbox("enable-diffuse", "Enable Diffuse Maps"));
     root.appendChild(boolCheckbox("enable-normalmaps", "Enable Normal Maps"));
     root.appendChild(boolCheckbox("enable-instancing", "Enable Instancing"));
     root.appendChild(boolCheckbox("enable-fog", "Enable Fog"));
