@@ -20,6 +20,7 @@ class Viewer {
         this._renderSettingsDirty = true;
         this._renderSettings = new Map([
             [ "show-normals", false ],
+            [ "show-wireframe", false ],
 
             [ "enable-reflections", true ],
             [ "enable-normalmaps", true ],
@@ -28,6 +29,8 @@ class Viewer {
 
             [ "enable-ambient", true ],
             [ "enable-direct", true ],
+
+            [ "ambient-color", scene.ambientColor ],
         ]);
     }
 
@@ -177,6 +180,13 @@ class Viewer {
             this._scene.walkAll(function(node) {
                 node.removeComponent(NormalRenderer);
             });
+        }
+
+        if (this._renderSettings.get("show-wireframe")) {
+            renderer.drawTypeOverride = "lines";
+        }
+        else {
+            renderer.drawTypeOverride = null;
         }
     }
 }

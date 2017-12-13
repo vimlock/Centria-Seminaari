@@ -25,13 +25,14 @@
      *
      * If invalid string is given, gl.TRIANGLES is returned.
      */
-    function GetDrawType(gl, material) {
-        switch (material.drawType) {
+    function GetDrawType(gl, drawType) {
+        switch (drawType) {
         case "points":
             return gl.POINTS;
         case "lines":
             return gl.LINES;
         case "wireframe":
+            return gl.LINE_STRIP;
         default:
             return gl.TRIANGLES;
         }
@@ -140,6 +141,8 @@
             this.enableReflections = true;
 
             this.disabledDefines = new Set();
+
+            this.drawTypeOverride = null;
 
             if (this.enableInstancing) {
                 this._createInstancingBuffer();
@@ -528,7 +531,7 @@
                 let mat = batch.material;
                 let env = batch.envMap;
 
-                let drawType = GetDrawType(gl, mat);
+                let drawType = GetDrawType(gl, this.drawTypeOverride ? this.drawTypeOverride : mat.drawType);
 
                 if (!mat) {
                     console.log("batch without material");

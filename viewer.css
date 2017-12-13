@@ -79,3 +79,10 @@ canvas {
 
 .component {
 }
+
+.render-menu {
+}
+
+.render-menu input {
+    color: #101010;
+}

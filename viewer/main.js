@@ -250,7 +250,7 @@ function makeDefaultScene() {
         ]);
 
         spawnEyeballs(scene, eyeMesh, eyeMaterial, 1, 0);
-        spawnEyeballs(scene, eyeMesh, eyeMaterial, 20, 150);
+        spawnEyeballs(scene, eyeMesh, eyeMaterial, 8, 150);
 
     });
 
