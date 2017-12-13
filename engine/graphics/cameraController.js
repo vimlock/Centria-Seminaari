@@ -1,3 +1,4 @@
+/* global Component, vec3, Quaternion */
 "use strict";
 
 (function(context) {
@@ -14,6 +15,9 @@
             this._roll = 0;
             
             this.input = null;
+
+            // In radians
+            this.turnSpeed = 0.04;
             
         }
         
@@ -42,8 +46,8 @@
             if (input["e"]) { dy += 0.1 * timeDelta; }
             if (input["q"]) { dy -= 0.1 * timeDelta; }
             
-            if(input["Mouse1"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * 0.04; }
-            if(input["Mouse1"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * 0.04; }
+            if(input["Mouse1"] && input["MouseDeltaX"]) { rx = input["MouseDeltaX"] * this.turnSpeed; }
+            if(input["Mouse1"] && input["MouseDeltaY"]) { ry = input["MouseDeltaY"] * this.turnSpeed; }
             
             input["MouseDeltaX"] = 0;
             input["MouseDeltaY"] = 0;
@@ -74,7 +78,6 @@
             
             this.node.localRotation = rot;
         }
-        
-    }
+    };
     
 })(this);
