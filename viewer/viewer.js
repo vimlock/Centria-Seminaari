@@ -187,10 +187,12 @@ class Viewer {
         }
 
         if (this._renderSettings.get("show-wireframe")) {
-            renderer.drawTypeOverride = "lines";
+            renderer.globalDefines = [
+                ["WIREFRAME", null],
+            ];
         }
         else {
-            renderer.drawTypeOverride = null;
+            renderer.globalDefines = [];
         }
     }
 }

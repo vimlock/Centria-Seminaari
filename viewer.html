@@ -178,6 +178,10 @@ function toggleStatistics(text) {
                 uniform vec3 uViewPosition;
             #endif
 
+            #ifdef WIREFRAME
+                in vec3 iBarycentric;
+            #endif
+
         #endif
 
         #define TEXTURE_LOD_BIAS -1.0
@@ -205,6 +209,10 @@ function toggleStatistics(text) {
 
         #ifdef ENVIRONMENTMAP
             varying vec3 vReflection;
+        #endif
+
+        #ifdef WIREFRAME
+            varying vec3 vBarycentric;
         #endif
 
         varying vec3 vWorldPos;
@@ -255,6 +263,10 @@ function toggleStatistics(text) {
 
             #ifdef ENVIRONMENTMAP
                 vReflection = vWorldPos - uViewPosition;
+            #endif
+
+            #ifdef WIREFRAME
+                vBarycentric = iBarycentric;
             #endif
 
             gl_Position = pos;
@@ -350,6 +362,17 @@ function toggleStatistics(text) {
         }
         #endif
 
+#ifdef WIREFRAME
+
+float edgeFactor(){
+    vec3 d = fwidth(vBarycentric);
+    vec3 a3 = smoothstep(vec3(0.0), d*1.5, vBarycentric);
+    return min(min(a3.x, a3.y), a3.z);
+}
+
+#endif
+
+
         ///////////////////////////////////////////////////////////////////////////////
         // Fragment shader
 
@@ -415,11 +438,19 @@ function toggleStatistics(text) {
                 col.rgb = mix(col.rgb, uFogColor, GetFogFactor(gl_FragCoord.z / gl_FragCoord.w));
             #endif
 
-            fColor = col;
+            #ifdef WIREFRAME
 
-            #ifdef NORMALMAP
-            // fColor.rgb = texture2D(sNormalMap, vTexCoord).xyz;
+            /*
+            if(any(lessThan(vBarycentric, vec3(0.02)))){
+                col = vec4(1.0, 0.5, 0.0, 1.0);
+            }
+            */
+
+            col = mix(vec4(1.0, 0.5, 0.0, 1.0), col, edgeFactor());
+
             #endif
+
+            fColor = col;
         }
 
         #endif

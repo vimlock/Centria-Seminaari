@@ -141,6 +141,7 @@
             this.enableReflections = true;
 
             this.disabledDefines = new Set();
+            this.globalDefines = [];
 
             this.drawTypeOverride = null;
 
@@ -544,6 +545,7 @@
                 }
 
                 let extraDefines = [];
+                Array.prototype.push.apply(extraDefines, this.globalDefines);
 
                 if (env) {
                     extraDefines.push(["ENVIRONMENTMAP", null]);
@@ -831,6 +833,16 @@
                     gl.enableVertexAttribArray(index);
                 }
             });
+
+            if (mesh.barycentricBuffer) {
+                let index = attribOffsets["barycentric"];
+
+                if (index >= 0) {
+                    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.barycentricBuffer);
+                    gl.vertexAttribPointer(index, 3, gl.FLOAT, false, 4 * 3, 0);
+                    gl.enableVertexAttribArray(index);
+                }
+            }
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
         }
@@ -1126,6 +1138,7 @@
                 tangent: gl.getAttribLocation(program, "iTangent"),
                 bitangent: gl.getAttribLocation(program, "iBitangent"),
                 instanceModelMatrix: gl.getAttribLocation(program, "iInstanceModelMatrix"),
+                barycentric: gl.getAttribLocation(program, "iBarycentric"),
             };
 
             prog.updateKey(this.disabledDefines);

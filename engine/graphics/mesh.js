@@ -4,7 +4,7 @@
 (function(context) {
 
     context.MeshAttributeNames = [
-        "position", "color", "texCoord", "normal", "tangent", "bitangent"
+        "position", "color", "texCoord", "normal", "tangent", "bitangent",
     ];
 
     /**
@@ -39,6 +39,7 @@
 
             this.indexBuffer = null;
             this.vertexBuffer = null;
+            this.barycentricBuffer = null;
             
             this.vertexData = null;
 
@@ -109,6 +110,8 @@
             let mesh = new Mesh();
             
             mesh.vertexData = vertices;
+            mesh.indexData = indices;
+
             mesh.indexType = gl.UNSIGNED_SHORT;
             mesh.indexBuffer = ib;
             mesh.vertexBuffer = vb;
@@ -120,6 +123,7 @@
             for (let g of mesh.geometries) {
                 g.mesh = mesh;
             }
+            mesh.calculateBarycentricCoordinates();
             
             return mesh;
         }
@@ -248,8 +252,8 @@
                     bitan.push(...tdir, ...tdir, ...tdir);
                     
                 }
-			}
-			
+            }
+
             return Mesh.buildMesh(v, t, n, ind, tan, bitan, geometries);
         }
 
@@ -341,7 +345,32 @@
             let iBuff = new Uint16Array(indices);
             
             return Mesh.fromData(vBuff, iBuff, attrs, geometries);
-		}
+        }
+
+        calculateBarycentricCoordinates()
+        {
+            if (this.barycentricBuffer)
+                return;
+
+            let bcoords = new Float32Array(this.indexData.length * 3);
+
+            for (let i = 0; i < this.indexData.length; i += 3) {
+                for (let k = 0; k < 3; k++) {
+                    let offset = this.indexData[i + k];
+
+                    bcoords[offset * 3 + 0] = k == 0 ? 1.0 : 0.0;
+                    bcoords[offset * 3 + 1] = k == 1 ? 1.0 : 0.0;
+                    bcoords[offset * 3 + 2] = k == 2 ? 1.0 : 0.0;
+                }
+            }
+
+            let gl = engine.gl;
+            let bb = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, bb);
+            gl.bufferData(gl.ARRAY_BUFFER, bcoords, gl.STATIC_DRAW);
+
+            this.barycentricBuffer = bb;
+        }
 
     };
 })(this);
