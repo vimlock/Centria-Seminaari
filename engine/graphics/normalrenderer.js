@@ -1,22 +1,24 @@
-"use strict";
+/* global engine, Geometry, Renderable, Model, Mesh, MeshAttribute */
 
+"use strict";
 
 (function(context) {
 
     context.NormalRenderer = class NormalRenderer extends Renderable {
         
-        constructror() {
+        constructor() {
+            super();
+
             this.wasCreated = false;
             this.mesh = null;
-            this.material = null;
+            this.material = engine.resources.getCached(Material, "DebugNormal");
         }
         
         
         update() {
-                console.error("asd");
-            if (!wasCreated) {
-                model = this.node.getComponent(Model);
-                wasCreated = true;
+            if (!this.wasCreated) {
+                let model = this.node.getComponent(Model);
+                this.wasCreated = true;
                 this.generateMesh(model);
             }
         }
@@ -105,9 +107,10 @@
                 return this.mesh.geometries;
         }
         
-    }
+    };
     
 })(this);
+
 /*
 let myModelNode = scene.addChild();
 
