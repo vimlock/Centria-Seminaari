@@ -17,6 +17,23 @@
     </head>
     
     <body>
+        <script>
+function toggleStatistics(text) {
+    let e = document.getElementById("render-statistics");
+    if (!e)
+        return;
+
+    if (e.style.display == "none") {
+        text.textContent = "Hide Statistics";
+        e.style.display = ""
+    }
+    else {
+        text.textContent = "Show Statistics";
+        e.style.display = "none";
+    }
+}
+        </script>
+
         <div class="main">
             <div id="side-panel" class="panel">
                 <div class="row">
@@ -33,6 +50,13 @@
             </div>
             <div id="fps-counter">
                 0
+            </div>
+            <div id="render-statistics-container">
+
+                <a href="#" onclick="toggleStatistics(this)">Show Statistics</a>
+
+                <div id="render-statistics" style="display:none;">
+                </div>
             </div>
         </div>
 

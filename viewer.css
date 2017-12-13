@@ -86,3 +86,17 @@ canvas {
 .render-menu input {
     color: #101010;
 }
+
+#render-statistics-container {
+    position: absolute;
+    width: 256px;
+    right: 25px;
+    top: 25px;
+
+    color: #EEEEEE;
+    font-family: "Lucida Console", Monaco, monospace;
+}
+
+#render-statistics-container p {
+    margin: 0px;
+}

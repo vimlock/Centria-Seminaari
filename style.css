@@ -32,12 +32,3 @@ canvas {
 	height: 100px;
 	
 }
-
-#render-statistics {
-    position: absolute;
-    top: 25px;
-    left: 25px;
-
-    color: #EEEEEE;
-    font-family: "Lucida Console", Monaco, monospace;
-}

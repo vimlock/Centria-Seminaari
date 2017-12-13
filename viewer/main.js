@@ -277,6 +277,26 @@ function drawOriginAxes(debug, size, opacity=1.0) {
     debug.line([    0,     0, -size], [   0,    0, size], new Color(0, 0, 1, opacity));
 }
 
+function displayStatics(performance) {
+    let div = document.getElementById("render-statistics");
+
+    let html = 
+        "<p>FPS: " + parseInt(performance.fps) + "</p>" +
+        "<p>Scene Nodes: " + performance.objects + "</p>" +
+        "<p>Vertices: " + performance.vertices + "</p>" +
+        "<p>Draw Calls: " + performance.numDrawCalls + "</p>" +
+        "<p>Lights: " +     performance.numLights + "</p>" +
+        "<p>Batches: " +    performance.batches + "</p>" +
+        "<p> bindShader(): " +    performance.bindShader + "</p>" +
+        "<p> bindMaterial(): " +  performance.bindMaterial + "</p>"+
+        "<p> bindMesh(): " +      performance.bindMesh + "</p>"+
+        "<p> bindTexture(): " +   performance.bindTexture + "</p>"+
+        "<p> bindLights(): " +    performance.bindLights + "</p>"+
+        "<p> bindTransform(): " + performance.bindTransform + "</p>";
+
+    div.innerHTML = html;
+}
+
 function viewerMain() {
     initEngine();
     let scene = makeDefaultScene();
@@ -326,6 +346,8 @@ function viewerMain() {
         if (fpsCounter) {
             fpsCounter.innerHTML = parseInt(avgFps);
         }
+
+        displayStatics(engine.renderer.performance);
 
         prevFrameTime = currentFrameTime;
 
