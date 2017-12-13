@@ -283,6 +283,10 @@ function viewerMain() {
 
     let viewer = new Viewer(scene);
 
+    scene.onModified.addListener(function() {
+        viewer._dirty = true;
+    });
+
     requestAnimationFrame(function update() {
         let currentFrameTime = Date.now();
         let timeDelta = currentFrameTime - prevFrameTime;
@@ -317,7 +321,6 @@ function viewerMain() {
         }
 
         prevFrameTime = currentFrameTime;
-
 
         if (viewer._dirty) {
             viewer._dirty = false;
