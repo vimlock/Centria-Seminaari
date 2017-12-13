@@ -139,6 +139,8 @@
 
             this.enableReflections = true;
 
+            this.disabledDefines = new Set();
+
             if (this.enableInstancing) {
                 this._createInstancingBuffer();
             }
@@ -370,11 +372,18 @@
             if (!materials || !geometries)
                 return;
 
+            let hasReflectiveMaterials = false;
+            for (let mat of materials) {
+                if (mat && mat.allowReflections) {
+                    hasReflectiveMaterials = true;
+                }
+            }
+
             this.performance.numModels++;
 
             // Select the environment map for renderable.
             let envMap = null;
-            if (this.enableReflections) {
+            if (this.enableReflections && hasReflectiveMaterials) {
 
                 // Use static environment map if available, otherwise pick the closest one.
                 if (renderable.staticEnvironmentMap) {
@@ -531,16 +540,30 @@
                     continue;
                 }
 
+                let extraDefines = [];
+
+                if (env) {
+                    extraDefines.push(["ENVIRONMENTMAP", null]);
+                }
+
                 let instanced = this.enableInstancing && mat.allowInstancing
                      && batch.transforms.length > MIN_INSTANCES_PER_BATCH;
 
                 // Add instancing define for the shader if we're using instancing.
                 if (instanced) {
-                    this._bindMaterial(mat, new Map([...mat.defines, ["INSTANCING", null]]));
+                    extraDefines.push(["INSTANCING", null]);
+                }
+
+                let defines = null;
+
+                if (extraDefines.length == 0) {
+                    defines = mat.defines;
                 }
                 else {
-                    this._bindMaterial(mat, mat.defines);
+                    defines = new Map([...mat.defines, ...extraDefines]);
                 }
+
+                this._bindMaterial(mat, defines);
 
                 // If the material binding failed we can't render.
                 //
@@ -989,7 +1012,7 @@
                 return null;
 
             // Try to get cached shader first
-            let key = buildShaderKey(shader.name, defines);
+            let key = buildShaderKey(shader.name, defines, this.disabledDefines);
 
             if (key in this.shaderCache) {
                 return this.shaderCache[key];
@@ -1042,8 +1065,8 @@
             
             let success = gl.getProgramParameter(program, gl.LINK_STATUS);
             if (!success) {
-                console.log("Failed to compile program " + buildShaderKey(shader.name, shader.defines) +
-                    " :" + gl.getProgramInfoLog(program));
+                console.log("Failed to compile program " + buildShaderKey(shader.name, shader.defines,
+                    this.disabledDefines) + " :" + gl.getProgramInfoLog(program));
                 return null;
             }
 
@@ -1102,7 +1125,7 @@
                 instanceModelMatrix: gl.getAttribLocation(program, "iInstanceModelMatrix"),
             };
 
-            prog.updateKey();
+            prog.updateKey(this.disabledDefines);
 
             let uniforms = Object.entries(prog.uniformLocations).
                 filter(x => x[1] != null).
@@ -1150,6 +1173,11 @@
             }
 
             return Array.from(defines.keys()).sort().map(function(key) {
+                
+                if (this.disabledDefines.has(key)) {
+                    return "";
+                }
+
                 let val = defines[key];
                 if (val) {
                     return "#define " + key + " " + val + "\n";
@@ -1157,7 +1185,7 @@
                 else {
                     return "#define " + key + "\n";
                 }
-            }).join("");
+            }, this).join("");
         }
 
         /**
@@ -1197,7 +1225,7 @@
             let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
             if (!success) {
                 console.log("Failed to compile " + typeName + " shader " +
-                    buildShaderKey(name, defines) + " : " + gl.getShaderInfoLog(shader));
+                    buildShaderKey(name, defines) + " : " + gl.getShaderInfoLog(shader), this.disabledDefines);
 
                 console.log(modifiedSource);
 

@@ -9,11 +9,16 @@
         }
     };
 
-    context.buildShaderKey = function(name, defines) {
+    context.buildShaderKey = function(name, defines, filter=null) {
         let defineStrs = [];
 
         if (defines) {
             defines.forEach(function(val, key) {
+
+                if (filter && filter.has(key)) {
+                    return;
+                }
+
                 if (val === null) {
                     defineStrs.push(key);
                 }
@@ -45,8 +50,8 @@
         /**
          * Should be called after defines or name is modified
          */
-        updateKey() {
-            this.key = context.buildShaderKey(this.source.name, this.defines);
+        updateKey(filters=null) {
+            this.key = context.buildShaderKey(this.source.name, this.defines, filters);
         }
     };
 
