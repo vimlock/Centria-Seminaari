@@ -168,6 +168,9 @@ class Viewer {
         if (!this._renderSettings.get("enable-direct"))
             shaderDisables.add("LIGHTS");
 
+        if (!this._renderSettings.get("show-wireframe"))
+            shaderDisables.add("WIREFRAME");
+
         renderer.disabledDefines = shaderDisables;
 
         if (this._renderSettings.get("show-normals")) {
@@ -184,15 +187,6 @@ class Viewer {
             this._scene.walkAll(function(node) {
                 node.removeComponent(NormalRenderer);
             });
-        }
-
-        if (this._renderSettings.get("show-wireframe")) {
-            renderer.globalDefines = [
-                ["WIREFRAME", null],
-            ];
-        }
-        else {
-            renderer.globalDefines = [];
         }
     }
 }

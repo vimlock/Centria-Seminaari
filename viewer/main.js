@@ -242,6 +242,7 @@ function makeDefaultScene() {
         eyeMaterial.enableDefine("NORMALMAP");
         eyeMaterial.enableDefine("SPECMAP");
         eyeMaterial.enableDefine("AMBIENT");
+        eyeMaterial.enableDefine("WIREFRAME");
         
         eyeMaterial.specularColor = new Color(2, 2, 2, 40);
 
