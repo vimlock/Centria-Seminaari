@@ -105,6 +105,13 @@ function initBuiltinResources() {
 
     engine.resources.addBuiltinResource("DefaultMaterial", defaultMaterial);
 
+    let normalDebugMaterial = new Material();
+    normalDebugMaterial.shader = defaultShader;
+    normalDebugMaterial.drawType = "lines";
+    normalDebugMaterial.allowReflections = false;
+
+    engine.resources.addBuiltinResource("DebugNormal", normalDebugMaterial);
+
     // Init builtin meshes
 
     let defaultCube = buildTestMesh(

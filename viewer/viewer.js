@@ -1,5 +1,5 @@
 /* exported Viewer */
-/* global engine, hierarchyPanel, renderPanel */
+/* global engine, hierarchyPanel, renderPanel, Model, NormalRenderer */
 
 "use strict";
 
@@ -148,5 +148,18 @@ class Viewer {
             shaderDisables.add("NORMALMAP");
 
         renderer.disabledDefines = shaderDisables;
+
+        if (this._renderSettings.get("show-normals")) {
+            this._scene.walkAll(function(node) {
+                if (node.getComponent(Model)) {
+                    node.createComponent(NormalRenderer);
+                }
+            });
+        }
+        else {
+            this._scene.walkAll(function(node) {
+                node.removeComponent(NormalRenderer);
+            });
+        }
     }
 }
