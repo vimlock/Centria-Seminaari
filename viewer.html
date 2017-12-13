@@ -19,10 +19,11 @@
     <body>
         <div class="main">
             <div id="side-panel" class="panel">
-                <h2>Scene</h2>
-                <button>Scene Settings</button>
-                <button>Viewer Settings</button>
-                <button>Inspector</button>
+                <div class="row">
+                    <h2 id="viewer-active-panel-name"></h2>
+                    <button id="viewer-hierarchy-panel-button">Hierarchy</button>
+                    <button id="viewer-render-panel-button">Settings</button>
+                </div>
 
                 <div id="panel-inner">
                 </div>
@@ -73,9 +74,9 @@
 		<script src="engine/graphics/texture.js"></script>
 
 		<script src="viewer/main.js"></script>
+		<script src="viewer/renderPanel.js"></script>
+		<script src="viewer/hierarchyPanel.js"></script>
 		<script src="viewer/viewer.js"></script>
-		<script src="viewer/sceneGraph.js"></script>
-		<script src="viewer/properties.js"></script>
 
         <script>
             window.addEventListener("load", function() {
@@ -374,7 +375,7 @@
             #ifdef ENVIRONMENTMAP
                 #ifdef SPECMAP
                     col.rgb += texture(sEnvironmentMap, normalize(reflect(vReflection, normal)), 5.0).rgb *
-                        texture2D(sSpecularMap, vTexCoord).rgb * 0.3f;
+                        texture2D(sSpecularMap, vTexCoord).rgb * 0.5f;
                 #else
                     col.rgb += texture(sEnvironmentMap, normalize(reflect(vReflection, normal)), -20.0).rgb * 0.25;
                 #endif

@@ -4,7 +4,7 @@
 /* global EnvironmentMap, Camera, Light, Model */
 /* global Material, Mesh, ShaderSource, Texture, JSONFile, TextFile */
 /* global DebugRenderer, Renderer, RenderView, ResourceManager, Scene */
-/* global Viewer, updateSceneGraph, updateProperties */
+/* global Viewer */
 /* global InputManager */
 /* global CameraController */
 /* global DegToRad */
@@ -231,7 +231,6 @@ function makeDefaultScene() {
         eyeMaterial.enableDefine("FOG");
         eyeMaterial.enableDefine("NORMALMAP");
         eyeMaterial.enableDefine("SPECMAP");
-        eyeMaterial.enableDefine("ENVIRONMENTMAP");
         
         eyeMaterial.specularColor = new Color(2, 2, 2, 40);
 
@@ -272,7 +271,6 @@ function viewerMain() {
 
     let prevFrameTime = Date.now();
 
-    let panel = document.getElementById("panel-inner");
     let fpsCounter = document.getElementById("fps-counter");
 
     engine.renderer.performance.fps = 50.0;
@@ -280,12 +278,9 @@ function viewerMain() {
     engine.debug = new DebugRenderer(engine.gl);
     engine.debug._shader = engine.resources.getCached(ShaderSource, "DebugShader");
 
-
     let viewer = new Viewer(scene);
 
-    scene.onModified.addListener(function() {
-        viewer._dirty = true;
-    });
+    viewer.init();
 
     requestAnimationFrame(function update() {
         let currentFrameTime = Date.now();
@@ -322,19 +317,6 @@ function viewerMain() {
 
         prevFrameTime = currentFrameTime;
 
-        if (viewer._dirty) {
-            viewer._dirty = false;
-
-            panel.innerHTML = "";
-            let sgraph = updateSceneGraph(viewer, scene);
-            if (sgraph) {
-                panel.appendChild(sgraph);
-            }
-
-            let properties = updateProperties(viewer);
-            if (properties) {
-                panel.appendChild(properties);
-            }
-        }
+        viewer.update();
     });
 }
